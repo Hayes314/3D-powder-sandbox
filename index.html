@@ -197,6 +197,25 @@
     border: 1px solid var(--accent-gold);
   }
   #trial-banner.visible { display: flex; }
+
+  /* 3D Printer Progress Pill */
+  #printer-banner {
+    position: fixed;
+    top: calc(max(10px, env(safe-area-inset-top)) + 54px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 11;
+    padding: 6px 14px;
+    border-radius: 99px;
+    display: none;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+    border: 1px solid var(--accent-primary);
+    box-shadow: 0 0 20px rgba(0, 240, 255, 0.25);
+  }
+  #printer-banner.visible { display: flex; }
+
   .trial-progress-bar {
     width: 90px;
     height: 6px;
@@ -209,6 +228,12 @@
     width: 0%;
     background: var(--accent-gold);
     transition: width 0.25s ease;
+  }
+  .printer-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-primary);
+    transition: width 0.12s linear;
   }
 
   /* Left Tools Dock */
@@ -285,10 +310,10 @@
     color: #FFF;
   }
 
-  /* 3D Spatial & Shape Controls Floating Pill */
+  /* 3D Spatial & Slicer Floating Pill */
   #spatial-bar {
     position: fixed;
-    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 114px);
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 118px);
     left: 50%;
     transform: translateX(-50%);
     z-index: 9;
@@ -296,7 +321,7 @@
     border-radius: 99px;
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: 9px;
     font-size: 0.75rem;
     color: var(--text-muted);
     max-width: calc(100vw - 24px);
@@ -305,7 +330,7 @@
   }
   #spatial-bar::-webkit-scrollbar { display: none; }
   #spatial-bar input[type="range"] {
-    width: 68px;
+    width: 64px;
     accent-color: var(--accent-primary);
     cursor: pointer;
   }
@@ -316,7 +341,7 @@
     bottom: max(10px, env(safe-area-inset-bottom));
     left: 50%;
     transform: translateX(-50%);
-    width: min(980px, calc(100vw - 20px));
+    width: min(1020px, calc(100vw - 20px));
     z-index: 10;
     padding: 8px 12px;
     border-radius: 18px;
@@ -361,13 +386,13 @@
   .brush-control {
     display: flex;
     align-items: center;
-    gap: 7px;
+    gap: 6px;
     font-size: 0.75rem;
     color: var(--text-muted);
     flex-wrap: wrap;
   }
   .brush-control input[type="range"] {
-    width: 72px;
+    width: 68px;
     accent-color: var(--accent-primary);
     cursor: pointer;
   }
@@ -376,11 +401,16 @@
     color: var(--text-main);
     border: 1px solid var(--accent-primary);
     border-radius: 8px;
-    padding: 3px 8px;
+    padding: 3px 7px;
     font-size: 0.74rem;
     font-weight: 600;
     cursor: pointer;
     outline: none;
+  }
+  .shape-select.place-mode {
+    background: rgba(255, 209, 102, 0.14);
+    border-color: var(--accent-gold);
+    color: var(--accent-gold);
   }
   .shape-select option {
     background: #0F172A;
@@ -557,7 +587,7 @@
     .telemetry-group .hide-sm { display: none; }
     #tools-dock {
       top: auto;
-      bottom: 152px;
+      bottom: 158px;
       left: 10px;
       transform: none;
       flex-direction: row;
@@ -573,7 +603,7 @@
       padding: 4px;
     }
     #spatial-bar {
-      bottom: 110px;
+      bottom: 116px;
       padding: 4px 10px;
     }
     .tool-btn { width: 32px; height: 32px; font-size: 0.9rem; }
@@ -631,9 +661,19 @@
   <b id="trial-timer" style="font-family:var(--font-mono); color:var(--accent-primary);">60s</b>
 </div>
 
+<!-- 3D Printer Progress HUD Pill -->
+<div id="printer-banner" class="glass">
+  <span style="font-weight:700; color:var(--accent-primary);">🖨️ <span data-i18n="printing_label">3D 列印中</span></span>
+  <span id="printer-layer-info" style="font-family:var(--font-mono);">Y: 1/8</span>
+  <div class="trial-progress-bar"><div class="printer-progress-fill" id="printer-fill"></div></div>
+  <b id="printer-pct" style="font-family:var(--font-mono); color:var(--accent-gold);">0%</b>
+  <button class="icon-btn" id="btn-print-pause" style="padding:2px 7px; font-size:0.72rem;">⏸</button>
+  <button class="icon-btn danger" id="btn-print-cancel" style="padding:2px 7px; font-size:0.72rem;">✕</button>
+</div>
+
 <!-- Left Tools Dock -->
 <aside id="tools-dock" class="glass">
-  <button class="tool-btn active" data-tool="brush" title="3D 建造／圖形放置 (Build / B)">🖌️</button>
+  <button class="tool-btn active" data-tool="brush" title="3D 建造／平面繪圖 (Build / B)">🖌️</button>
   <button class="tool-btn" data-tool="orbit" title="360° 視角旋轉模式 (Orbit / V)">🔄</button>
   <button class="tool-btn" data-tool="erase" title="空間橡皮擦 (Erase / E)">🧹</button>
   <button class="tool-btn" data-tool="eyedropper" title="3D 吸管取樣 (Eyedropper / I)">💉</button>
@@ -659,17 +699,21 @@
   <button class="tool-btn" id="btn-apoc-rain" title="神蹟：創世高空甘霖">🌧️</button>
 </aside>
 
-<!-- 3D Spatial Controls Floating Pill -->
+<!-- 3D Spatial & Plane Lock Controls Floating Pill -->
 <div id="spatial-bar" class="glass">
-  <span data-i18n="air_plane">建造高度 Y</span>:<b id="plane-y-val">18</b>
-  <input type="range" id="plane-y-slider" min="1" max="47" value="18" />
+  <button class="icon-btn active" id="btn-lock-plane" style="padding:2px 8px; font-size:0.72rem;" title="鎖定在指定 Y 高度平面作畫 (快捷鍵 L)">🔒 鎖定平面 Y</button>
+  <b id="plane-y-val" style="color:var(--accent-primary);">15</b>
+  <input type="range" id="plane-y-slider" min="0" max="47" value="15" />
   <span style="opacity:0.4;">|</span>
   <span data-i18n="slice_y">剖面切層</span>:<b id="slice-y-val">48</b>
   <input type="range" id="slice-y-slider" min="2" max="48" value="48" />
+  <span style="opacity:0.4;">|</span>
+  <button class="icon-btn" id="btn-infill" style="padding:2px 8px; font-size:0.72rem;" title="3D 打印機內部填充率">🧱 填充: 100%</button>
+  <button class="icon-btn" id="btn-print-speed" style="padding:2px 8px; font-size:0.72rem;" title="3D 打印機噴頭速率">⚡ 噴速: 4x</button>
   <button class="icon-btn" id="btn-auto-rotate" style="padding:2px 8px; font-size:0.72rem;">🌐 Auto-Spin</button>
 </div>
 
-<!-- Bottom Element Palette & 3D Geometric Shapes -->
+<!-- Bottom Element Palette & Placement Mode / 3D Shapes -->
 <footer id="bottom-dock" class="glass">
   <div class="dock-header-row">
     <div class="cat-tabs" id="cat-tabs">
@@ -682,9 +726,18 @@
     </div>
 
     <div class="brush-control">
+      <!-- Placement Mode Selector -->
+      <select id="place-mode-select" class="shape-select place-mode" title="選擇放置方式">
+        <option value="instant" data-i18n="pm_instant">⚡ 瞬間放置</option>
+        <option value="printer" data-i18n="pm_printer">🖨️ 3D 打印機層疊</option>
+        <option value="extrude_2pt" data-i18n="pm_extrude">📐 兩點拉伸方塊</option>
+        <option value="mirror_xz" data-i18n="pm_mirror">🪞 四象限鏡像</option>
+      </select>
+
       <!-- 3D Basic Shapes Selector -->
       <select id="shape-select" class="shape-select" title="選擇 3D 基礎幾何圖形">
         <option value="brush_sphere" data-i18n="shape_brush_sphere">🖌️ 連續球刷</option>
+        <option value="brush_flat_disc" data-i18n="shape_flat_disc">💿 平面圓盤刷</option>
         <option value="stamp_cube" data-i18n="shape_cube">🧊 實心立方體</option>
         <option value="stamp_hollow_box" data-i18n="shape_hollow_box">📦 空心容器箱</option>
         <option value="stamp_sphere" data-i18n="shape_sphere">🔮 實心球體</option>
@@ -694,8 +747,8 @@
         <option value="stamp_torus" data-i18n="shape_torus">🍩 3D 能量星環</option>
       </select>
 
-      <span data-i18n="brush_size">尺寸</span>:<b id="brush-val">2</b>
-      <input type="range" id="brush-slider" min="1" max="10" value="2" />
+      <span data-i18n="brush_size">尺寸</span>:<b id="brush-val">3</b>
+      <input type="range" id="brush-slider" min="1" max="10" value="3" />
       <button class="icon-btn" id="btn-gravity-dir" style="padding:2px 7px; font-size:0.72rem;" title="重力方向">⬇ G</button>
     </div>
   </div>
@@ -704,7 +757,7 @@
 
   <div class="hint-bar">
     <span id="hover-inspector" data-i18n="hint_inspect">移動滑鼠至 3D 空間檢視體素座標與溫度</span>
-    <span data-i18n="hint_controls">左鍵放置圖形 · 右鍵拖曳旋轉 360° · 滾輪縮放 · P 暫停 · R 重置</span>
+    <span data-i18n="hint_controls">左鍵平面作畫 · L 鎖定高度平面 · 右鍵旋轉 360° · 滾輪縮放</span>
   </div>
 </footer>
 
@@ -740,7 +793,6 @@ const ELEMENTS = [
   { id: 9,  key: 'wood',      cat: 'life',    type: 'solid',   density: 95,  temp: 22,   flam: 0.25, color: [0.43, 0.30, 0.25], hex: '#6D4C41', sym: 'WD', unlockedByDefault: true },
   { id: 10, key: 'gunpowder', cat: 'chem',    type: 'powder',  density: 55,  temp: 22,   flam: 0.9,  color: [0.26, 0.26, 0.26], hex: '#424242', sym: 'GP', unlockedByDefault: true },
 
-  // Discoverable / Unlockable Elements (11 - 24)
   { id: 11, key: 'steam',     cat: 'thermal', type: 'gas',     density: -20, temp: 115,  flam: 0,    color: [0.81, 0.85, 0.86], hex: '#CFD8DC', sym: 'SM', unlockedByDefault: false, recipeHint: 'water + fire/lava' },
   { id: 12, key: 'obsidian',  cat: 'basic',   type: 'solid',   density: 100, temp: 40,   flam: 0,    color: [0.22, 0.12, 0.58], hex: '#311B92', sym: 'OB', unlockedByDefault: false, recipeHint: 'lava + water' },
   { id: 13, key: 'glass',     cat: 'chem',    type: 'solid',   density: 100, temp: 35,   flam: 0,    color: [0.50, 0.87, 0.92], hex: '#80DEEA', sym: 'GL', unlockedByDefault: false, recipeHint: 'sand + lava/lightning' },
@@ -782,7 +834,7 @@ const ACHIEVEMENTS_DEF = [
   { id: 'chain_30',     icon: '💥', cond: s => s.maxCombo >= 30 },
   { id: 'creator_1k',   icon: '🎨', cond: s => s.totalCreated >= 1000 },
   { id: 'creator_10k',  icon: '🌌', cond: s => s.totalCreated >= 10000 },
-  { id: 'reaction_500', icon: '🧪', cond: s => s.totalReactions >= 500 },
+  { id: 'printer_pro',  icon: '🖨️', cond: s => s.printedJobs >= 3 },
   { id: 'apocalypse',   icon: '🕳️', cond: s => s.apocCount >= 1 },
   { id: 'trial_winner', icon: '🎯', cond: s => s.trialsCleared >= 1 },
   { id: 'omniscient',   icon: '👁️', cond: s => s.discovered.length >= 24 }
@@ -802,11 +854,16 @@ const I18N_DICT = {
     stat_voxels: '體素',
     btn_codex: '圖鑑',
     btn_modes: '模式',
+    printing_label: '3D 列印中',
     cat_all: '全部', cat_basic: '基礎', cat_thermal: '熱能', cat_life: '生命', cat_chem: '化學', cat_cosmic: '奇幻',
     brush_size: '尺寸',
-    air_plane: '建造高度 Y',
     slice_y: '剖面切層',
+    pm_instant: '⚡ 瞬間放置',
+    pm_printer: '🖨️ 3D 打印機層疊',
+    pm_extrude: '📐 兩點拉伸方塊',
+    pm_mirror: '🪞 四象限鏡像',
     shape_brush_sphere: '🖌️ 連續球刷',
+    shape_flat_disc: '💿 平面圓盤刷',
     shape_cube: '🧊 實心立方體',
     shape_hollow_box: '📦 空心容器箱',
     shape_sphere: '🔮 實心球體',
@@ -815,7 +872,7 @@ const I18N_DICT = {
     shape_cylinder: '🛢️ 3D 圓柱體',
     shape_torus: '🍩 3D 能量星環',
     hint_inspect: '移動滑鼠至 3D 空間檢視體素座標與溫度',
-    hint_controls: '左鍵放置圖形 · 右鍵拖曳旋轉 360° · 滾輪縮放 · P 暫停 · R 重置',
+    hint_controls: '左鍵平面作畫 · L 鎖定高度平面 · 右鍵旋轉 360° · 滾輪縮放',
     vacuum: '虛無空間',
     el_sand: '3D 沙粒', el_water: '立體純水', el_stone: '花崗岩', el_soil: '肥沃泥土',
     el_fire: '星火烈焰', el_lava: '地心熔岩', el_ice: '永凍寒冰', el_seed: '生命種子',
@@ -845,7 +902,7 @@ const I18N_DICT = {
     ach_chain_30: '創世狂熱：達成 30 連鎖反應',
     ach_creator_1k: '微觀建築師：累計創造 1,000 體素',
     ach_creator_10k: '星海造物主：累計創造 10,000 體素',
-    ach_reaction_500: '混沌實驗家：累計觸發 500 次反應',
+    ach_printer_pro: '層疊造物師：使用 3D 打印機完成 3 座建築',
     ach_apocalypse: '末日審判者：釋放一次清場神蹟',
     ach_trial_winner: '試煉征服者：通過任一 3D 創世試煉',
     ach_omniscient: '全知全能：解鎖全部 24 種元素',
@@ -862,11 +919,16 @@ const I18N_DICT = {
     stat_voxels: '体素',
     btn_codex: '图鉴',
     btn_modes: '模式',
+    printing_label: '3D 打印中',
     cat_all: '全部', cat_basic: '基础', cat_thermal: '热能', cat_life: '生命', cat_chem: '化学', cat_cosmic: '奇幻',
     brush_size: '尺寸',
-    air_plane: '建造高度 Y',
     slice_y: '剖面切层',
+    pm_instant: '⚡ 瞬间放置',
+    pm_printer: '🖨️ 3D 打印机层叠',
+    pm_extrude: '📐 两点拉伸方块',
+    pm_mirror: '🪞 四象限镜像',
     shape_brush_sphere: '🖌️ 连续球刷',
+    shape_flat_disc: '💿 平面圆盘刷',
     shape_cube: '🧊 实心立方体',
     shape_hollow_box: '📦 空心容器箱',
     shape_sphere: '🔮 实心球体',
@@ -875,7 +937,7 @@ const I18N_DICT = {
     shape_cylinder: '🛢️ 3D 圆柱体',
     shape_torus: '🍩 3D 能量星环',
     hint_inspect: '移动鼠标至 3D 空间检视体素坐标与温度',
-    hint_controls: '左键放置图形 · 右键拖拽旋转 360° · 滚轮缩放 · P 暂停 · R 重置',
+    hint_controls: '左键平面作画 · L 锁定高度平面 · 右键旋转 360° · 滚轮缩放',
     vacuum: '虚无空间',
     el_sand: '3D 沙粒', el_water: '立体纯水', el_stone: '花岗岩', el_soil: '肥沃泥土',
     el_fire: '星火烈焰', el_lava: '地心熔岩', el_ice: '永冻寒冰', el_seed: '生命种子',
@@ -905,7 +967,7 @@ const I18N_DICT = {
     ach_chain_30: '创世狂热：达成 30 连锁反应',
     ach_creator_1k: '微观建筑师：累计创造 1,000 体素',
     ach_creator_10k: '星海造物主：累计创造 10,000 体素',
-    ach_reaction_500: '混沌实验家：累计触发 500 次反应',
+    ach_printer_pro: '层叠造物师：使用 3D 打印机完成 3 座建筑',
     ach_apocalypse: '末日审判者：释放一次清场神迹',
     ach_trial_winner: '试炼征服者：通过任一 3D 创世试炼',
     ach_omniscient: '全知全能：解锁全部 24 种元素',
@@ -922,11 +984,16 @@ const I18N_DICT = {
     stat_voxels: 'Voxels',
     btn_codex: 'Codex',
     btn_modes: 'Modes',
+    printing_label: '3D Printing',
     cat_all: 'All', cat_basic: 'Basic', cat_thermal: 'Thermal', cat_life: 'Life', cat_chem: 'Chem', cat_cosmic: 'Cosmic',
     brush_size: 'Size',
-    air_plane: 'Build Plane Y',
     slice_y: 'Slice Y',
+    pm_instant: '⚡ Instant Stamp',
+    pm_printer: '🖨️ 3D Printer Layer',
+    pm_extrude: '📐 2-Point Extrude',
+    pm_mirror: '🪞 4-Way Mirror',
     shape_brush_sphere: '🖌️ Free Brush',
+    shape_flat_disc: '💿 Flat Plane Disc',
     shape_cube: '🧊 Solid Cube',
     shape_hollow_box: '📦 Hollow Box',
     shape_sphere: '🔮 Solid Sphere',
@@ -935,7 +1002,7 @@ const I18N_DICT = {
     shape_cylinder: '🛢️ 3D Cylinder',
     shape_torus: '🍩 3D Energy Torus',
     hint_inspect: 'Hover 3D space to inspect voxel coordinates & temperature',
-    hint_controls: 'LMB Place Shape · RMB Orbit 360° · Wheel Zoom · P Pause · R Reset',
+    hint_controls: 'LMB Draw on Plane · L Lock Y Plane · RMB Orbit 360° · Wheel Zoom',
     vacuum: 'Empty Void',
     el_sand: '3D Sand', el_water: 'Voxel Water', el_stone: 'Granite', el_soil: 'Fertile Soil',
     el_fire: 'Star Fire', el_lava: 'Core Lava', el_ice: 'Permafrost', el_seed: 'Life Seed',
@@ -965,7 +1032,7 @@ const I18N_DICT = {
     ach_chain_30: 'Genesis Overdrive: Reach a 30x reaction chain',
     ach_creator_1k: 'Micro Architect: Create 1,000 voxels',
     ach_creator_10k: 'Star Weaver: Create 10,000 voxels',
-    ach_reaction_500: 'Chaos Theorist: Trigger 500 reactions',
+    ach_printer_pro: 'Additive Architect: 3D print 3 structures',
     ach_apocalypse: 'Judgment Day: Unleash a Divine Wipe',
     ach_trial_winner: 'Trial Conqueror: Clear any 3D Genesis Trial',
     ach_omniscient: 'Omniscient: Unlock all 24 elements',
@@ -1029,6 +1096,7 @@ class AudioEngine {
     this.bgmVol = 0.35;
     this.pentatonic = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
     this.lastBrushSound = 0;
+    this.lastStepperSound = 0;
     this.ambientGain = null;
   }
 
@@ -1117,6 +1185,14 @@ class AudioEngine {
     else this.playTone(180 + Math.random() * 40, 'triangle', 0.06, 0.09);
   }
 
+  playStepper(yLevel) {
+    const now = performance.now();
+    if (now - this.lastStepperSound < 65) return;
+    this.lastStepperSound = now;
+    const pitch = 260 + (yLevel % 24) * 14;
+    this.playTone(pitch, 'triangle', 0.045, 0.075, pitch * 1.15);
+  }
+
   playStamp() {
     this.playTone(220, 'triangle', 0.16, 0.22, 440);
   }
@@ -1148,7 +1224,7 @@ class AudioEngine {
  */
 class SaveManager {
   constructor() {
-    this.STORAGE_KEY = 'aetheria_3d_voxel_save_v2';
+    this.STORAGE_KEY = 'aetheria_3d_voxel_save_v4';
     this.data = this.load();
   }
 
@@ -1165,7 +1241,7 @@ class SaveManager {
       discovered: ELEMENTS.filter(e => e.unlockedByDefault).map(e => e.id),
       achievements: [],
       clearedTrials: [],
-      stats: { totalCreated: 0, totalReactions: 0, maxCombo: 0, apocCount: 0, trialsCleared: 0 }
+      stats: { totalCreated: 0, totalReactions: 0, maxCombo: 0, apocCount: 0, trialsCleared: 0, printedJobs: 0 }
     };
   }
 
@@ -1209,7 +1285,7 @@ class SaveManager {
 class VoxelSimulation3D {
   constructor(size = 48) {
     this.resize(size);
-    this.gravityDir = 1; // 1: Down (-Y), -1: Up (+Y), 0: Zero-G
+    this.gravityDir = 1;
     this.ambientTemp = 22;
     this.undoStack = [];
     this.redoStack = [];
@@ -1332,7 +1408,6 @@ class VoxelSimulation3D {
           const el = EL_MAP[id];
           if (!el) continue;
 
-          // 1. Lifetime Decay
           if (id === 5) {
             if (this.life[i] <= 1 || Math.random() < 0.045) {
               this.setVoxel(x, y, z, Math.random() < 0.14 ? 11 : 0);
@@ -1358,7 +1433,6 @@ class VoxelSimulation3D {
             this.life[i]--;
           }
 
-          // 2. 6-Neighbor 3D Chemical & Thermal Reactions
           let transformed = false;
           for (let d = 0; d < 6; d++) {
             const nx = x + dirs6[d][0];
@@ -1478,7 +1552,6 @@ class VoxelSimulation3D {
 
           if (transformed) continue;
 
-          // 3. 3D Movement Rules
           if (el.type === 'solid') continue;
 
           if (el.type === 'creature') {
@@ -1581,7 +1654,7 @@ class VoxelSimulation3D {
 
 /**
  * ============================================================================
- * 7. ZERO-DEPENDENCY WEBGL 2.0 INSTANCED VOXEL RENDERER & RAYCASTER
+ * 7. ZERO-DEPENDENCY WEBGL 2.0 INSTANCED VOXEL RENDERER & BUILD PLANE GRID
  * ============================================================================
  */
 class WebGLVoxelRenderer {
@@ -1594,13 +1667,14 @@ class WebGLVoxelRenderer {
     }
 
     this.yaw = 0.68;
-    this.pitch = 0.52;
+    this.pitch = 0.56;
     this.distance = 82;
     this.autoRotate = false;
 
     this.initShaders();
     this.initCubeGeometry();
     this.initWireframeBox();
+    this.initPlaneGridGeometry(48);
   }
 
   initShaders() {
@@ -1752,6 +1826,25 @@ class WebGLVoxelRenderer {
     gl.bindVertexArray(null);
   }
 
+  initPlaneGridGeometry(N) {
+    const gl = this.gl;
+    const step = 4;
+    const verts = [];
+    for (let i = 0; i <= N; i += step) {
+      verts.push(i, 0, 0,  i, 0, N);
+      verts.push(0, 0, i,  N, 0, i);
+    }
+    this.gridVertCount = verts.length / 3;
+    this.gridVao = gl.createVertexArray();
+    gl.bindVertexArray(this.gridVao);
+    const vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(verts), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+  }
+
   getMatrices(N) {
     const aspect = this.canvas.width / Math.max(1, this.canvas.height);
     const fov = (45 * Math.PI) / 180;
@@ -1788,7 +1881,10 @@ class WebGLVoxelRenderer {
     return { viewProj, eye };
   }
 
-  raycastVoxel(clientX, clientY, sim, buildPlaneY) {
+  /**
+   * Raycast onto Locked Y Plane OR 3D Voxel Surfaces
+   */
+  raycastVoxel(clientX, clientY, sim, buildPlaneY, lockPlane = true) {
     const rect = this.canvas.getBoundingClientRect();
     const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
     const ndcY = 1 - ((clientY - rect.top) / rect.height) * 2;
@@ -1802,6 +1898,24 @@ class WebGLVoxelRenderer {
     const farPt = this.transformPoint(invVP, [ndcX, ndcY, 1]);
     const dir = this.normalize([farPt[0] - nearPt[0], farPt[1] - nearPt[1], farPt[2] - nearPt[2]]);
 
+    // 1. Locked Horizontal Y-Plane Mode: Intersect directly with y = buildPlaneY + 0.5
+    if (lockPlane) {
+      if (Math.abs(dir[1]) > 0.001) {
+        const targetPlaneHeight = buildPlaneY + 0.5;
+        const tPlane = (targetPlaneHeight - eye[1]) / dir[1];
+        if (tPlane > 0) {
+          const gx = Math.floor(eye[0] + dir[0] * tPlane);
+          const gz = Math.floor(eye[2] + dir[2] * tPlane);
+          const gy = Math.max(0, Math.min(N - 1, buildPlaneY));
+          if (gx >= 0 && gx < N && gz >= 0 && gz < N) {
+            return { hit: [gx, gy, gz], place: [gx, gy, gz] };
+          }
+        }
+      }
+      return null;
+    }
+
+    // 2. Surface Snap Mode: Hit existing 3D voxels first, fallback to buildPlaneY
     let lastEmpty = null;
     for (let t = 1; t < 160; t += 0.45) {
       const px = eye[0] + dir[0] * t;
@@ -1821,7 +1935,7 @@ class WebGLVoxelRenderer {
     }
 
     if (Math.abs(dir[1]) > 0.001) {
-      const tPlane = (buildPlaneY - eye[1]) / dir[1];
+      const tPlane = (buildPlaneY + 0.5 - eye[1]) / dir[1];
       if (tPlane > 0) {
         const gx = Math.floor(eye[0] + dir[0] * tPlane);
         const gz = Math.floor(eye[2] + dir[2] * tPlane);
@@ -1834,7 +1948,7 @@ class WebGLVoxelRenderer {
     return null;
   }
 
-  render(sim, sliceY, cursorPos, brushSize, shapeMode, themeObj, shakeOffset) {
+  render(sim, sliceY, buildPlaneY, lockPlane, cursorPos, brushSize, shapeMode, placeMode, extrudeAnchor, activePrintJob, themeObj, shakeOffset) {
     const gl = this.gl;
     if (!gl) return;
 
@@ -1902,8 +2016,18 @@ class WebGLVoxelRenderer {
     }
 
     gl.useProgram(this.lineProg);
-    gl.bindVertexArray(this.boxVao);
     gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProg, 'uViewProj'), false, viewProj);
+
+    // Draw Horizontal Build Plane Grid when Lock Plane is enabled
+    if (lockPlane && this.gridVao) {
+      gl.bindVertexArray(this.gridVao);
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uOffset'), 0, buildPlaneY + 0.02, 0);
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uScale'), 1, 1, 1);
+      gl.uniform4f(gl.getUniformLocation(this.lineProg, 'uColor'), 0.0, 0.94, 1.0, 0.24);
+      gl.drawArrays(gl.LINES, 0, this.gridVertCount);
+    }
+
+    gl.bindVertexArray(this.boxVao);
 
     // Outer World Bounds
     gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uOffset'), 0, 0, 0);
@@ -1911,8 +2035,43 @@ class WebGLVoxelRenderer {
     gl.uniform4fv(gl.getUniformLocation(this.lineProg, 'uColor'), themeObj.boxColor);
     gl.drawArrays(gl.LINES, 0, 24);
 
-    // 3D Shape / Brush Bounding Box Preview
-    if (cursorPos) {
+    // Active 3D Printer Nozzle & Target Blueprint Wireframe
+    if (activePrintJob && activePrintJob.nozzlePos) {
+      const [nx, ny, nz] = activePrintJob.nozzlePos;
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uOffset'), nx - 0.15, ny + 0.1, nz - 0.15);
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uScale'), 1.3, 1.8, 1.3);
+      gl.uniform4f(gl.getUniformLocation(this.lineProg, 'uColor'), 1.0, 0.85, 0.1, 1.0);
+      gl.drawArrays(gl.LINES, 0, 24);
+
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uOffset'), nx + 0.45, ny + 1.9, nz + 0.45);
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uScale'), 0.1, N - ny, 0.1);
+      gl.uniform4f(gl.getUniformLocation(this.lineProg, 'uColor'), 0.0, 0.95, 1.0, 0.65);
+      gl.drawArrays(gl.LINES, 0, 24);
+
+      if (activePrintJob.bounds) {
+        const b = activePrintJob.bounds;
+        gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uOffset'), b.minX, b.minY, b.minZ);
+        gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uScale'), b.maxX - b.minX + 1, b.maxY - b.minY + 1, b.maxZ - b.minZ + 1);
+        gl.uniform4f(gl.getUniformLocation(this.lineProg, 'uColor'), 0.0, 0.94, 1.0, 0.35);
+        gl.drawArrays(gl.LINES, 0, 24);
+      }
+    }
+
+    // 2-Point Extrude Live Preview Box
+    if (placeMode === 'extrude_2pt' && extrudeAnchor && cursorPos) {
+      const minX = Math.min(extrudeAnchor[0], cursorPos[0]);
+      const minY = Math.min(extrudeAnchor[1], cursorPos[1]);
+      const minZ = Math.min(extrudeAnchor[2], cursorPos[2]);
+      const sx = Math.abs(extrudeAnchor[0] - cursorPos[0]) + 1;
+      const sy = Math.abs(extrudeAnchor[1] - cursorPos[1]) + 1;
+      const sz = Math.abs(extrudeAnchor[2] - cursorPos[2]) + 1;
+
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uOffset'), minX, minY, minZ);
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uScale'), sx, sy, sz);
+      gl.uniform4f(gl.getUniformLocation(this.lineProg, 'uColor'), 1.0, 0.82, 0.2, 0.95);
+      gl.drawArrays(gl.LINES, 0, 24);
+    } else if (cursorPos) {
+      // Standard Cursor / Shape Bounding Box Preview
       const r = brushSize - 1;
       const span = r * 2 + 1;
       let ox = cursorPos[0] - r;
@@ -1920,10 +2079,17 @@ class WebGLVoxelRenderer {
       let oz = cursorPos[2] - r;
       let sx = span, sy = span, sz = span;
 
-      // For Pyramid & Cylinder, anchor bottom at cursor Y so structures sit cleanly on surfaces
-      if (shapeMode === 'stamp_pyramid' || shapeMode === 'stamp_cylinder') {
+      if (shapeMode === 'brush_flat_disc') {
         oy = cursorPos[1];
-        sy = Math.max(2, brushSize * 2 - 1);
+        sy = 1;
+      } else if (shapeMode === 'stamp_pyramid' || shapeMode === 'stamp_cylinder' || shapeMode === 'stamp_cube' || shapeMode === 'stamp_hollow_box') {
+        if (lockPlane && shapeMode.startsWith('stamp_')) {
+          oy = cursorPos[1];
+          sy = Math.max(2, brushSize * 2 - 1);
+        } else if (shapeMode === 'stamp_pyramid' || shapeMode === 'stamp_cylinder') {
+          oy = cursorPos[1];
+          sy = Math.max(2, brushSize * 2 - 1);
+        }
       } else if (shapeMode === 'stamp_torus') {
         oy = cursorPos[1];
         sy = 3;
@@ -1931,12 +2097,12 @@ class WebGLVoxelRenderer {
 
       gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uOffset'), ox, oy, oz);
       gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uScale'), sx, sy, sz);
-      const isStamp = shapeMode.startsWith('stamp_');
+      const isPrinter = placeMode === 'printer';
       gl.uniform4f(
         gl.getUniformLocation(this.lineProg, 'uColor'),
-        isStamp ? 0.0 : 1.0,
-        isStamp ? 0.94 : 0.85,
-        isStamp ? 1.0 : 0.25,
+        isPrinter ? 0.0 : 1.0,
+        isPrinter ? 0.95 : 0.85,
+        isPrinter ? 1.0 : 0.25,
         0.92
       );
       gl.drawArrays(gl.LINES, 0, 24);
@@ -1998,7 +2164,7 @@ class WebGLVoxelRenderer {
 
 /**
  * ============================================================================
- * 8. MAIN 3D GAME CONTROLLER WITH 3D GEOMETRIC SHAPE STAMPS
+ * 8. MAIN 3D GAME CONTROLLER WITH LOCKED BUILD PLANE & 3D PRINTER
  * ============================================================================
  */
 class Aetheria3DGame {
@@ -2014,13 +2180,23 @@ class Aetheria3DGame {
     this.activeTrial = null;
     this.trialTimeLeft = 0;
 
-    this.selectedElement = 1;
+    this.selectedElement = 3; // Granite for easy plane sketching
     this.selectedTool = 'brush';
     this.selectedCat = 'all';
-    this.shapeMode = 'brush_sphere'; // brush_sphere, stamp_cube, stamp_hollow_box, stamp_sphere, stamp_hollow_sphere, stamp_pyramid, stamp_cylinder, stamp_torus
-    this.brushSize = 2;
-    this.buildPlaneY = 18;
+
+    // Build Plane Lock & Placement Mode State
+    this.lockPlane = true;
+    this.buildPlaneY = 15;
     this.sliceY = this.sim.size;
+
+    this.placeMode = 'instant'; // 'instant', 'printer', 'extrude_2pt', 'mirror_xz'
+    this.shapeMode = 'brush_flat_disc';
+    this.brushSize = 2;
+    this.infillPercent = 100;
+    this.printSpeed = 4;
+    this.extrudeAnchor = null;
+    this.activePrintJob = null;
+
     this.simSpeed = 1;
     this.speedAccumulator = 0;
 
@@ -2159,29 +2335,78 @@ class Aetheria3DGame {
     this.canvas.style.cursor = tool === 'orbit' ? 'grab' : 'crosshair';
   }
 
-  /**
-   * Place 3D Basic Geometric Shapes (Cube, Hollow Box, Sphere, Hollow Sphere, Pyramid, Cylinder, Torus)
-   */
-  stamp3DShape(pos) {
-    if (!pos) return;
-    const [cx, cy, cz] = pos;
-    const r = Math.max(1, this.brushSize - 1);
-    const elId = this.selectedElement;
-    let placed = 0;
+  toggleLockPlane() {
+    this.audio.playClick();
+    this.lockPlane = !this.lockPlane;
+    const btn = document.getElementById('btn-lock-plane');
+    btn.classList.toggle('active', this.lockPlane);
+    btn.textContent = this.lockPlane ? '🔒 鎖定平面 Y' : '🔓 自由吸附';
+    this.showToast(this.lockPlane ? `🔒 已鎖定在高度 Y = ${this.buildPlaneY} 平面作畫` : '🔓 已切換為 3D 表面自由吸附');
+  }
 
-    const placeIfValid = (x, y, z) => {
-      if (!this.sim.inBounds(x, y, z)) return;
-      const idx = this.sim.idx(x, y, z);
-      if (this.sim.type[idx] === 0 || elId === 5 || elId === 20) {
-        if (this.sim.setVoxel(x, y, z, elId)) placed++;
-      }
+  /**
+   * Generate Voxel Coordinates for any Geometric Shape + Infill Slicer Pattern
+   */
+  generateShapeCoords(pos, customBox = null) {
+    const coords = [];
+    const r = Math.max(1, this.brushSize - 1);
+    const infill = this.infillPercent;
+
+    const passesInfill = (x, y, z, isShell) => {
+      if (isShell || infill === 100) return true;
+      if (infill === 0) return false;
+      if (infill === 50) return (x + z) % 2 === 0;
+      if (infill === 25) return (x % 3 === 0) || (z % 3 === 0);
+      return true;
     };
 
-    if (this.shapeMode === 'stamp_cube') {
+    if (customBox) {
+      const { minX, maxX, minY, maxY, minZ, maxZ } = customBox;
+      for (let y = minY; y <= maxY; y++) {
+        for (let z = minZ; z <= maxZ; z++) {
+          for (let x = minX; x <= maxX; x++) {
+            const isShell = x === minX || x === maxX || y === minY || y === maxY || z === minZ || z === maxZ;
+            if (passesInfill(x, y, z, isShell)) coords.push([x, y, z]);
+          }
+        }
+      }
+      return coords;
+    }
+
+    const [cx, cy, cz] = pos;
+    const baseOffsetY = this.lockPlane ? r : 0;
+
+    if (this.shapeMode === 'brush_flat_disc') {
+      const rad = this.brushSize - 1;
+      const rad2 = rad * rad + 0.5;
+      for (let dz = -rad; dz <= rad; dz++) {
+        for (let dx = -rad; dx <= rad; dx++) {
+          if (dx * dx + dz * dz <= rad2) {
+            coords.push([cx + dx, cy, cz + dz]);
+          }
+        }
+      }
+    } else if (this.shapeMode === 'brush_sphere') {
+      const rad = this.brushSize - 1;
+      const r2 = rad * rad + 0.5;
+      for (let dy = -rad; dy <= rad; dy++) {
+        for (let dz = -rad; dz <= rad; dz++) {
+          for (let dx = -rad; dx <= rad; dx++) {
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 <= r2) {
+              const isShell = d2 >= (rad - 1) * (rad - 1);
+              if (passesInfill(cx + dx, cy + dy, cz + dz, isShell)) coords.push([cx + dx, cy + dy, cz + dz]);
+            }
+          }
+        }
+      }
+    } else if (this.shapeMode === 'stamp_cube') {
       for (let dy = -r; dy <= r; dy++) {
         for (let dz = -r; dz <= r; dz++) {
           for (let dx = -r; dx <= r; dx++) {
-            placeIfValid(cx + dx, cy + dy, cz + dz);
+            const isShell = Math.abs(dx) === r || Math.abs(dy) === r || Math.abs(dz) === r;
+            const py = cy + dy + baseOffsetY;
+            if (passesInfill(cx + dx, py, cz + dz, isShell)) coords.push([cx + dx, py, cz + dz]);
           }
         }
       }
@@ -2190,18 +2415,20 @@ class Aetheria3DGame {
         for (let dz = -r; dz <= r; dz++) {
           for (let dx = -r; dx <= r; dx++) {
             if (Math.abs(dx) === r || Math.abs(dy) === r || Math.abs(dz) === r) {
-              placeIfValid(cx + dx, cy + dy, cz + dz);
+              coords.push([cx + dx, cy + dy + baseOffsetY, cz + dz]);
             }
           }
         }
       }
     } else if (this.shapeMode === 'stamp_sphere') {
       const r2 = r * r + 0.4;
+      const inner2 = Math.max(0, (r - 1.1) * (r - 1.1));
       for (let dy = -r; dy <= r; dy++) {
         for (let dz = -r; dz <= r; dz++) {
           for (let dx = -r; dx <= r; dx++) {
-            if (dx * dx + dy * dy + dz * dz <= r2) {
-              placeIfValid(cx + dx, cy + dy, cz + dz);
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 <= r2 && passesInfill(cx + dx, cy + dy, cz + dz, d2 >= inner2)) {
+              coords.push([cx + dx, cy + dy, cz + dz]);
             }
           }
         }
@@ -2213,9 +2440,7 @@ class Aetheria3DGame {
         for (let dz = -r; dz <= r; dz++) {
           for (let dx = -r; dx <= r; dx++) {
             const d2 = dx * dx + dy * dy + dz * dz;
-            if (d2 <= outer2 && d2 >= inner2) {
-              placeIfValid(cx + dx, cy + dy, cz + dz);
-            }
+            if (d2 <= outer2 && d2 >= inner2) coords.push([cx + dx, cy + dy, cz + dz]);
           }
         }
       }
@@ -2225,18 +2450,22 @@ class Aetheria3DGame {
         const layerR = Math.max(0, r - Math.floor(h * 0.55));
         for (let dz = -layerR; dz <= layerR; dz++) {
           for (let dx = -layerR; dx <= layerR; dx++) {
-            placeIfValid(cx + dx, cy + h, cz + dz);
+            const isShell = h === 0 || Math.abs(dx) === layerR || Math.abs(dz) === layerR;
+            if (passesInfill(cx + dx, cy + h, cz + dz, isShell)) coords.push([cx + dx, cy + h, cz + dz]);
           }
         }
       }
     } else if (this.shapeMode === 'stamp_cylinder') {
       const height = Math.max(2, this.brushSize * 2 - 1);
       const r2 = r * r + 0.4;
+      const inner2 = Math.max(0, (r - 1.1) * (r - 1.1));
       for (let h = 0; h < height; h++) {
         for (let dz = -r; dz <= r; dz++) {
           for (let dx = -r; dx <= r; dx++) {
-            if (dx * dx + dz * dz <= r2) {
-              placeIfValid(cx + dx, cy + h, cz + dz);
+            const d2 = dx * dx + dz * dz;
+            if (d2 <= r2) {
+              const isShell = h === 0 || h === height - 1 || d2 >= inner2;
+              if (passesInfill(cx + dx, cy + h, cz + dz, isShell)) coords.push([cx + dx, cy + h, cz + dz]);
             }
           }
         }
@@ -2249,16 +2478,111 @@ class Aetheria3DGame {
           for (let dx = -(majorR + minorR); dx <= (majorR + minorR); dx++) {
             const distXZ = Math.hypot(dx, dz) - majorR;
             if (distXZ * distXZ + dy * dy <= minorR * minorR + 0.3) {
-              placeIfValid(cx + dx, cy + dy + 1, cz + dz);
+              coords.push([cx + dx, cy + dy + 1, cz + dz]);
             }
           }
         }
       }
     }
 
+    return coords;
+  }
+
+  enqueue3DPrintJob(rawCoords) {
+    const valid = rawCoords.filter(([x, y, z]) => this.sim.inBounds(x, y, z));
+    if (valid.length === 0) return;
+
+    let minX = 999, maxX = -999, minY = 999, maxY = -999, minZ = 999, maxZ = -999;
+    valid.forEach(([x, y, z]) => {
+      if (x < minX) minX = x; if (x > maxX) maxX = x;
+      if (y < minY) minY = y; if (y > maxY) maxY = y;
+      if (z < minZ) minZ = z; if (z > maxZ) maxZ = z;
+    });
+
+    const midX = (minX + maxX) * 0.5;
+    const midZ = (minZ + maxZ) * 0.5;
+
+    valid.sort((a, b) => {
+      if (a[1] !== b[1]) return a[1] - b[1];
+      const distA = Math.hypot(a[0] - midX, a[2] - midZ);
+      const distB = Math.hypot(b[0] - midX, b[2] - midZ);
+      if (Math.abs(distA - distB) > 0.8) return distB - distA;
+      const angA = Math.atan2(a[2] - midZ, a[0] - midX);
+      const angB = Math.atan2(b[2] - midZ, b[0] - midX);
+      return angA - angB;
+    });
+
+    this.activePrintJob = {
+      queue: valid,
+      cursor: 0,
+      elementId: this.selectedElement,
+      minY,
+      maxY,
+      bounds: { minX, maxX, minY, maxY, minZ, maxZ },
+      nozzlePos: valid[0],
+      paused: false
+    };
+
+    document.getElementById('printer-banner').classList.add('visible');
+    this.audio.playStamp();
+  }
+
+  stepActivePrintJob() {
+    const job = this.activePrintJob;
+    if (!job || job.paused) return;
+
+    const elId = job.elementId;
+    let placedThisTick = 0;
+
+    for (let s = 0; s < this.printSpeed && job.cursor < job.queue.length; s++) {
+      const [x, y, z] = job.queue[job.cursor];
+      job.nozzlePos = [x, y, z];
+      if (this.sim.inBounds(x, y, z)) {
+        const idx = this.sim.idx(x, y, z);
+        if (this.sim.type[idx] === 0 || elId === 5 || elId === 20) {
+          if (this.sim.setVoxel(x, y, z, elId)) placedThisTick++;
+        }
+      }
+      job.cursor++;
+    }
+
+    if (placedThisTick > 0) {
+      this.saveMgr.data.stats.totalCreated += placedThisTick;
+      this.audio.playStepper(job.nozzlePos[1]);
+    }
+
+    const total = job.queue.length;
+    const pct = Math.min(100, Math.round((job.cursor / total) * 100));
+    const curLayer = Math.max(1, job.nozzlePos[1] - job.minY + 1);
+    const totalLayers = Math.max(1, job.maxY - job.minY + 1);
+
+    document.getElementById('printer-layer-info').textContent = `Y: ${curLayer}/${totalLayers}`;
+    document.getElementById('printer-fill').style.width = pct + '%';
+    document.getElementById('printer-pct').textContent = pct + '%';
+
+    if (job.cursor >= total) {
+      this.activePrintJob = null;
+      document.getElementById('printer-banner').classList.remove('visible');
+      this.saveMgr.data.stats.printedJobs++;
+      this.saveMgr.save();
+      this.audio.playDiscovery();
+      this.checkAchievements();
+    }
+  }
+
+  placeInstantCoords(coords, playSound = true) {
+    const elId = this.selectedElement;
+    let placed = 0;
+    coords.forEach(([x, y, z]) => {
+      if (!this.sim.inBounds(x, y, z)) return;
+      const idx = this.sim.idx(x, y, z);
+      if (this.sim.type[idx] === 0 || elId === 5 || elId === 20) {
+        if (this.sim.setVoxel(x, y, z, elId)) placed++;
+      }
+    });
     if (placed > 0) {
       this.saveMgr.data.stats.totalCreated += placed;
-      this.audio.playStamp();
+      if (playSound) this.audio.playBrush(elId);
     }
   }
 
@@ -2280,17 +2604,82 @@ class Aetheria3DGame {
       return;
     }
 
-    // If in Stamp Shape mode and tool is brush, place geometric shape once on click (avoid overlapping spam on drag)
-    if (tool === 'brush' && this.shapeMode.startsWith('stamp_')) {
-      if (!isDrag) this.stamp3DShape(pos);
-      return;
+    if (tool === 'brush') {
+      // 1. 2-Point Drag & Extrude Mode
+      if (this.placeMode === 'extrude_2pt') {
+        if (!isDrag) {
+          if (!this.extrudeAnchor) {
+            this.extrudeAnchor = [...pos];
+            this.audio.playClick();
+            this.showToast(`📐 已設定起點 [Y:${pos[1]}]，請點擊第二點完成拉伸`);
+          } else {
+            const box = {
+              minX: Math.min(this.extrudeAnchor[0], pos[0]),
+              maxX: Math.max(this.extrudeAnchor[0], pos[0]),
+              minY: Math.min(this.extrudeAnchor[1], pos[1]),
+              maxY: Math.max(this.extrudeAnchor[1], pos[1]),
+              minZ: Math.min(this.extrudeAnchor[2], pos[2]),
+              maxZ: Math.max(this.extrudeAnchor[2], pos[2])
+            };
+            const coords = this.generateShapeCoords(pos, box);
+            this.placeInstantCoords(coords, false);
+            this.audio.playStamp();
+            this.extrudeAnchor = null;
+          }
+        }
+        return;
+      }
+
+      // 2. 3D Printer Layer-by-Layer Mode
+      if (this.placeMode === 'printer') {
+        if (!isDrag) {
+          const coords = this.generateShapeCoords(pos);
+          this.enqueue3DPrintJob(coords);
+        }
+        return;
+      }
+
+      // 3. 4-Quadrant Mirror Symmetry Mode
+      if (this.placeMode === 'mirror_xz') {
+        if (this.shapeMode.startsWith('stamp_') && isDrag) return;
+        const N = this.sim.size - 1;
+        const mirrors = [
+          [cx, cy, cz],
+          [N - cx, cy, cz],
+          [cx, cy, N - cz],
+          [N - cx, cy, N - cz]
+        ];
+        mirrors.forEach(mPos => {
+          const coords = this.generateShapeCoords(mPos);
+          this.placeInstantCoords(coords, true);
+        });
+        return;
+      }
+
+      // 4. Instant Stamp or Continuous Flat/Sphere Brush
+      if (this.shapeMode.startsWith('stamp_')) {
+        if (!isDrag) {
+          const coords = this.generateShapeCoords(pos);
+          this.placeInstantCoords(coords, false);
+          this.audio.playStamp();
+        }
+        return;
+      }
+
+      if (this.shapeMode === 'brush_flat_disc') {
+        const coords = this.generateShapeCoords(pos);
+        this.placeInstantCoords(coords, true);
+        return;
+      }
     }
 
+    // Continuous Sphere Brush / Erase / Heat / Cool / Vortex
     const r = this.brushSize - 1;
     const r2 = r * r + 0.5;
+    const isFlatErase = this.lockPlane && tool === 'erase' && this.shapeMode === 'brush_flat_disc';
     let modified = 0;
 
-    for (let dy = -r; dy <= r; dy++) {
+    for (let dy = (isFlatErase ? 0 : -r); dy <= (isFlatErase ? 0 : r); dy++) {
       for (let dz = -r; dz <= r; dz++) {
         for (let dx = -r; dx <= r; dx++) {
           if (dx * dx + dy * dy + dz * dz > r2) continue;
@@ -2332,6 +2721,8 @@ class Aetheria3DGame {
   }
 
   loadPresetTerrain(preset) {
+    this.activePrintJob = null;
+    document.getElementById('printer-banner').classList.remove('visible');
     this.sim.clear();
     const N = this.sim.size;
     const mid = Math.floor(N / 2);
@@ -2527,8 +2918,8 @@ class Aetheria3DGame {
     let html = `<div style="display:flex; gap:16px; flex-wrap:wrap; font-size:0.82rem; color:var(--accent-gold);">
       <span>✧ Aether: ${this.saveMgr.data.aether}</span>
       <span>🎨 Voxels: ${this.saveMgr.data.stats.totalCreated}</span>
+      <span>🖨️ 3D Prints: ${this.saveMgr.data.stats.printedJobs}</span>
       <span>🧪 Reactions: ${this.saveMgr.data.stats.totalReactions}</span>
-      <span>⚡ Max Combo: ${this.saveMgr.data.stats.maxCombo}</span>
     </div><div class="grid-2">`;
     ACHIEVEMENTS_DEF.forEach(a => {
       const done = this.saveMgr.data.achievements.includes(a.id);
@@ -2559,7 +2950,7 @@ class Aetheria3DGame {
       </div>
       <div class="setting-row">
         <span>🧊 3D Voxel Grid Size / 空間解析度</span>
-        <select onchange="const s=parseInt(this.value); game.saveMgr.data.gridSize=s; game.saveMgr.save(); game.sim.resize(s); game.sliceY=s; document.getElementById('slice-y-slider').max=s; document.getElementById('slice-y-slider').value=s; document.getElementById('slice-y-val').textContent=s; game.loadPresetTerrain('oasis');">
+        <select onchange="const s=parseInt(this.value); game.saveMgr.data.gridSize=s; game.saveMgr.save(); game.sim.resize(s); game.renderer.initPlaneGridGeometry(s); game.sliceY=s; document.getElementById('slice-y-slider').max=s; document.getElementById('slice-y-slider').value=s; document.getElementById('slice-y-val').textContent=s; document.getElementById('plane-y-slider').max=s-1; game.loadPresetTerrain('oasis');">
           <option value="36" ${d.gridSize === 36 ? 'selected' : ''}>36 × 36 × 36 (Fast Mobile)</option>
           <option value="48" ${d.gridSize === 48 ? 'selected' : ''}>48 × 48 × 48 (Balanced)</option>
           <option value="64" ${d.gridSize === 64 ? 'selected' : ''}>64 × 64 × 64 (Ultra Cube)</option>
@@ -2609,7 +3000,7 @@ class Aetheria3DGame {
       }
 
       this.sim.saveSnapshot();
-      const hitInfo = this.renderer.raycastVoxel(e.clientX, e.clientY, this.sim, this.buildPlaneY);
+      const hitInfo = this.renderer.raycastVoxel(e.clientX, e.clientY, this.sim, this.buildPlaneY, this.lockPlane);
       if (hitInfo) {
         const target = (this.selectedTool === 'brush') ? hitInfo.place : hitInfo.hit;
         this.pointer.cursor3D = target;
@@ -2629,7 +3020,7 @@ class Aetheria3DGame {
         return;
       }
 
-      const hitInfo = this.renderer.raycastVoxel(e.clientX, e.clientY, this.sim, this.buildPlaneY);
+      const hitInfo = this.renderer.raycastVoxel(e.clientX, e.clientY, this.sim, this.buildPlaneY, this.lockPlane);
       if (hitInfo) {
         const target = (this.selectedTool === 'brush') ? hitInfo.place : hitInfo.hit;
         this.pointer.cursor3D = target;
@@ -2643,7 +3034,8 @@ class Aetheria3DGame {
         const id = this.sim.type[idx];
         const name = id === 0 ? this.t('vacuum') : this.t('el_' + EL_MAP[id].key);
         const temp = Math.round(this.sim.temp[idx]);
-        document.getElementById('hover-inspector').textContent = `[X:${gx}, Y:${gy}, Z:${gz}] ${name} · ${temp}°C`;
+        const planeTag = this.lockPlane ? ` [平面鎖定 Y=${this.buildPlaneY}]` : '';
+        document.getElementById('hover-inspector').textContent = `[X:${gx}, Y:${gy}, Z:${gz}] ${name} · ${temp}°C${planeTag}`;
       } else {
         this.pointer.cursor3D = null;
       }
@@ -2658,20 +3050,32 @@ class Aetheria3DGame {
 
     window.addEventListener('wheel', e => {
       if (document.getElementById('modal-backdrop').classList.contains('open')) return;
-      if (e.shiftKey) {
+      if (e.altKey) {
+        e.preventDefault();
+        const nextY = Math.max(0, Math.min(this.sim.size - 1, this.buildPlaneY + (e.deltaY < 0 ? 1 : -1)));
+        this.buildPlaneY = nextY;
+        document.getElementById('plane-y-slider').value = nextY;
+        document.getElementById('plane-y-val').textContent = nextY;
+      } else if (e.shiftKey) {
         this.brushSize = Math.max(1, Math.min(10, this.brushSize + (e.deltaY < 0 ? 1 : -1)));
         document.getElementById('brush-slider').value = this.brushSize;
         document.getElementById('brush-val').textContent = this.brushSize;
       } else {
         this.renderer.distance = Math.max(24, Math.min(170, this.renderer.distance + e.deltaY * 0.05));
       }
-    }, { passive: true });
+    }, { passive: false });
 
     window.addEventListener('keydown', e => {
       if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
       const k = e.key.toLowerCase();
       if (k === 'p') this.togglePause();
-      else if (k === 'r') { this.audio.playClick(); this.sim.clear(); }
+      else if (k === 'l') this.toggleLockPlane();
+      else if (k === 'r') {
+        this.audio.playClick();
+        this.activePrintJob = null;
+        document.getElementById('printer-banner').classList.remove('visible');
+        this.sim.clear();
+      }
       else if (k === 'e') this.setTool('erase');
       else if (k === 'b') this.setTool('brush');
       else if (k === 'v') this.setTool('orbit');
@@ -2700,6 +3104,8 @@ class Aetheria3DGame {
     document.getElementById('btn-redo').onclick = () => { if (this.sim.redo()) this.audio.playClick(); };
     document.getElementById('btn-reset').onclick = () => {
       this.audio.playClick();
+      this.activePrintJob = null;
+      document.getElementById('printer-banner').classList.remove('visible');
       if (this.mode === 'trial' && this.activeTrial) this.startTrial(this.activeTrial);
       else this.sim.clear();
     };
@@ -2715,25 +3121,54 @@ class Aetheria3DGame {
     document.getElementById('btn-cam-reset').onclick = () => {
       this.audio.playClick();
       this.renderer.yaw = 0.68;
-      this.renderer.pitch = 0.52;
+      this.renderer.pitch = 0.56;
       this.renderer.distance = 82;
     };
     document.getElementById('btn-apoc-blackhole').onclick = () => this.triggerApocalypse('blackhole');
     document.getElementById('btn-apoc-nova').onclick = () => this.triggerApocalypse('nova');
     document.getElementById('btn-apoc-rain').onclick = () => this.triggerApocalypse('rain');
 
+    document.getElementById('btn-lock-plane').onclick = () => this.toggleLockPlane();
+
     document.getElementById('plane-y-slider').oninput = e => {
       this.buildPlaneY = parseInt(e.target.value, 10);
       document.getElementById('plane-y-val').textContent = this.buildPlaneY;
+      if (!this.lockPlane) this.toggleLockPlane();
     };
     document.getElementById('slice-y-slider').oninput = e => {
       this.sliceY = parseInt(e.target.value, 10);
       document.getElementById('slice-y-val').textContent = this.sliceY;
     };
+    document.getElementById('btn-infill').onclick = e => {
+      this.audio.playClick();
+      const levels = [100, 50, 25, 0];
+      const next = levels[(levels.indexOf(this.infillPercent) + 1) % levels.length];
+      this.infillPercent = next;
+      e.target.textContent = `🧱 填充: ${next}%`;
+    };
+    document.getElementById('btn-print-speed').onclick = e => {
+      this.audio.playClick();
+      const speeds = [1, 4, 12];
+      const next = speeds[(speeds.indexOf(this.printSpeed) + 1) % speeds.length];
+      this.printSpeed = next;
+      e.target.textContent = `⚡ 噴速: ${next}x`;
+    };
     document.getElementById('btn-auto-rotate').onclick = e => {
       this.audio.playClick();
       this.renderer.autoRotate = !this.renderer.autoRotate;
       e.target.classList.toggle('active', this.renderer.autoRotate);
+    };
+
+    document.getElementById('btn-print-pause').onclick = e => {
+      if (!this.activePrintJob) return;
+      this.audio.playClick();
+      this.activePrintJob.paused = !this.activePrintJob.paused;
+      e.target.textContent = this.activePrintJob.paused ? '▶️' : '⏸';
+    };
+    document.getElementById('btn-print-cancel').onclick = () => {
+      this.audio.playClick();
+      this.activePrintJob = null;
+      document.getElementById('printer-banner').classList.remove('visible');
     };
 
     document.querySelectorAll('.cat-tab').forEach(tab => {
@@ -2744,6 +3179,22 @@ class Aetheria3DGame {
         this.renderElementStrip();
       };
     });
+
+    document.getElementById('place-mode-select').onchange = e => {
+      this.audio.playClick();
+      this.placeMode = e.target.value;
+      this.extrudeAnchor = null;
+      this.setTool('brush');
+      if (this.placeMode === 'printer' && (this.shapeMode === 'brush_sphere' || this.shapeMode === 'brush_flat_disc')) {
+        this.shapeMode = 'stamp_pyramid';
+        document.getElementById('shape-select').value = 'stamp_pyramid';
+        if (this.brushSize < 4) {
+          this.brushSize = 4;
+          document.getElementById('brush-slider').value = 4;
+          document.getElementById('brush-val').textContent = 4;
+        }
+      }
+    };
 
     document.getElementById('shape-select').onchange = e => {
       this.audio.playClick();
@@ -2847,6 +3298,10 @@ class Aetheria3DGame {
 
     if (this.state === 'PAUSED') return;
 
+    if (this.activePrintJob) {
+      this.stepActivePrintJob();
+    }
+
     if (this.comboTimer > 0) {
       this.comboTimer -= dt;
       if (this.comboTimer <= 0) {
@@ -2916,9 +3371,14 @@ class Aetheria3DGame {
     this.renderer.render(
       this.sim,
       this.sliceY,
+      this.buildPlaneY,
+      this.lockPlane,
       this.pointer.cursor3D,
       this.brushSize,
       this.shapeMode,
+      this.placeMode,
+      this.extrudeAnchor,
+      this.activePrintJob,
       THEMES[this.saveMgr.data.theme] || THEMES.neon,
       shakeOffset
     );
