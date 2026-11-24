@@ -1,0 +1,2932 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover" />
+<title>造物主紀元 3D：體素星海 | AETHERIA 3D Voxel Powder Cosmos</title>
+<style>
+  :root {
+    --bg-canvas: #060914;
+    --bg-hud: rgba(12, 19, 36, 0.78);
+    --bg-panel: rgba(16, 25, 46, 0.94);
+    --bg-btn: rgba(255, 255, 255, 0.07);
+    --bg-btn-hover: rgba(255, 255, 255, 0.16);
+    --border-glass: rgba(255, 255, 255, 0.15);
+    --text-main: #F1F5F9;
+    --text-muted: #94A3B8;
+    --accent-primary: #00F0FF;
+    --accent-secondary: #FF2A85;
+    --accent-gold: #FFD166;
+    --shadow-glow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    --font-sans: system-ui, -apple-system, "Segoe UI", Roboto, "Noto Sans TC", "PingFang TC", "Microsoft JhengHei", sans-serif;
+    --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    user-select: none;
+    -webkit-user-select: none;
+    -webkit-touch-callout: none;
+  }
+
+  html, body {
+    width: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    background-color: var(--bg-canvas);
+    color: var(--text-main);
+    font-family: var(--font-sans);
+    touch-action: none;
+    overscroll-behavior: none;
+    transition: background-color 0.45s ease, color 0.35s ease;
+  }
+
+  #gl-canvas {
+    position: fixed;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    display: block;
+    z-index: 1;
+    cursor: crosshair;
+  }
+
+  #screen-vignette {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 2;
+    transition: box-shadow 0.3s ease;
+  }
+  #screen-vignette.overdrive {
+    box-shadow: inset 0 0 70px rgba(255, 209, 102, 0.42);
+    animation: pulseGold 1.4s infinite alternate;
+  }
+  #screen-vignette.critical {
+    box-shadow: inset 0 0 75px rgba(255, 42, 85, 0.48);
+    animation: pulseRed 0.7s infinite alternate;
+  }
+  @keyframes pulseGold {
+    from { box-shadow: inset 0 0 40px rgba(255, 209, 102, 0.25); }
+    to { box-shadow: inset 0 0 85px rgba(255, 209, 102, 0.55); }
+  }
+  @keyframes pulseRed {
+    from { box-shadow: inset 0 0 40px rgba(255, 42, 85, 0.3); }
+    to { box-shadow: inset 0 0 90px rgba(255, 42, 85, 0.65); }
+  }
+
+  .glass {
+    background: var(--bg-hud);
+    backdrop-filter: blur(14px);
+    -webkit-backdrop-filter: blur(14px);
+    border: 1px solid var(--border-glass);
+    box-shadow: var(--shadow-glow);
+  }
+
+  /* Top HUD Bar */
+  #top-bar {
+    position: fixed;
+    top: max(10px, env(safe-area-inset-top));
+    left: max(10px, env(safe-area-inset-left));
+    right: max(10px, env(safe-area-inset-right));
+    z-index: 10;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 8px 14px;
+    border-radius: 16px;
+    flex-wrap: wrap;
+  }
+
+  .brand-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+  }
+  .game-badge {
+    font-weight: 800;
+    font-size: 0.95rem;
+    letter-spacing: 0.5px;
+    color: var(--accent-primary);
+    text-shadow: 0 0 12px rgba(0, 240, 255, 0.35);
+    white-space: nowrap;
+  }
+  .mode-pill {
+    font-size: 0.75rem;
+    padding: 3px 9px;
+    border-radius: 99px;
+    background: rgba(0, 240, 255, 0.14);
+    border: 1px solid var(--accent-primary);
+    color: var(--text-main);
+    cursor: pointer;
+    font-weight: 600;
+  }
+
+  .telemetry-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-family: var(--font-mono);
+    font-size: 0.78rem;
+    color: var(--text-muted);
+  }
+  .stat-chip {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-btn);
+    padding: 4px 8px;
+    border-radius: 8px;
+  }
+  .stat-chip b { color: var(--text-main); font-weight: 700; }
+  .stat-chip.aether b { color: var(--accent-gold); }
+
+  .action-group {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .icon-btn {
+    background: var(--bg-btn);
+    border: 1px solid var(--border-glass);
+    color: var(--text-main);
+    border-radius: 10px;
+    padding: 6px 10px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    transition: all 0.16s ease;
+    white-space: nowrap;
+  }
+  .icon-btn:hover {
+    background: var(--bg-btn-hover);
+    border-color: var(--accent-primary);
+    transform: translateY(-1px);
+  }
+  .icon-btn.active {
+    background: var(--accent-primary);
+    color: #060913;
+    border-color: var(--accent-primary);
+    font-weight: 700;
+  }
+  .icon-btn.danger:hover {
+    border-color: #FF4D6D;
+    color: #FF4D6D;
+  }
+
+  /* Trial Status Banner */
+  #trial-banner {
+    position: fixed;
+    top: calc(max(10px, env(safe-area-inset-top)) + 54px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9;
+    padding: 7px 16px;
+    border-radius: 99px;
+    display: none;
+    align-items: center;
+    gap: 12px;
+    font-size: 0.82rem;
+    border: 1px solid var(--accent-gold);
+  }
+  #trial-banner.visible { display: flex; }
+  .trial-progress-bar {
+    width: 90px;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.15);
+    border-radius: 99px;
+    overflow: hidden;
+  }
+  .trial-progress-fill {
+    height: 100%;
+    width: 0%;
+    background: var(--accent-gold);
+    transition: width 0.25s ease;
+  }
+
+  /* Left Tools Dock */
+  #tools-dock {
+    position: fixed;
+    left: max(10px, env(safe-area-inset-left));
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 16px;
+  }
+  .tool-btn {
+    width: 38px;
+    height: 38px;
+    border-radius: 11px;
+    background: var(--bg-btn);
+    border: 1px solid transparent;
+    color: var(--text-main);
+    font-size: 1.02rem;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: all 0.15s ease;
+  }
+  .tool-btn:hover {
+    background: var(--bg-btn-hover);
+    transform: scale(1.06);
+  }
+  .tool-btn.active {
+    background: var(--accent-primary);
+    color: #050811;
+    box-shadow: 0 0 14px rgba(0, 240, 255, 0.45);
+  }
+  .divider-h {
+    height: 1px;
+    background: var(--border-glass);
+    margin: 2px 0;
+  }
+
+  /* Right Speed, Camera & Slicer Dock */
+  #right-dock {
+    position: fixed;
+    right: max(10px, env(safe-area-inset-right));
+    top: 50%;
+    transform: translateY(-50%);
+    z-index: 10;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding: 8px;
+    border-radius: 16px;
+    align-items: center;
+  }
+  .speed-btn {
+    width: 38px;
+    padding: 5px 0;
+    border-radius: 9px;
+    background: var(--bg-btn);
+    border: 1px solid transparent;
+    color: var(--text-main);
+    font-family: var(--font-mono);
+    font-size: 0.72rem;
+    font-weight: 700;
+    cursor: pointer;
+    text-align: center;
+  }
+  .speed-btn.active {
+    background: var(--accent-secondary);
+    color: #FFF;
+  }
+
+  /* 3D Spatial & Shape Controls Floating Pill */
+  #spatial-bar {
+    position: fixed;
+    bottom: calc(max(10px, env(safe-area-inset-bottom)) + 114px);
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 9;
+    padding: 6px 14px;
+    border-radius: 99px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    max-width: calc(100vw - 24px);
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  #spatial-bar::-webkit-scrollbar { display: none; }
+  #spatial-bar input[type="range"] {
+    width: 68px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+  }
+
+  /* Bottom Element Palette Dock */
+  #bottom-dock {
+    position: fixed;
+    bottom: max(10px, env(safe-area-inset-bottom));
+    left: 50%;
+    transform: translateX(-50%);
+    width: min(980px, calc(100vw - 20px));
+    z-index: 10;
+    padding: 8px 12px;
+    border-radius: 18px;
+    display: flex;
+    flex-direction: column;
+    gap: 7px;
+  }
+
+  .dock-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .cat-tabs {
+    display: flex;
+    gap: 4px;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+  .cat-tabs::-webkit-scrollbar { display: none; }
+
+  .cat-tab {
+    padding: 4px 10px;
+    border-radius: 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    background: transparent;
+    border: 1px solid transparent;
+    color: var(--text-muted);
+    cursor: pointer;
+    white-space: nowrap;
+  }
+  .cat-tab.active {
+    background: var(--bg-btn-hover);
+    border-color: var(--accent-primary);
+    color: var(--text-main);
+  }
+
+  .brush-control {
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    font-size: 0.75rem;
+    color: var(--text-muted);
+    flex-wrap: wrap;
+  }
+  .brush-control input[type="range"] {
+    width: 72px;
+    accent-color: var(--accent-primary);
+    cursor: pointer;
+  }
+  .shape-select {
+    background: rgba(0, 240, 255, 0.12);
+    color: var(--text-main);
+    border: 1px solid var(--accent-primary);
+    border-radius: 8px;
+    padding: 3px 8px;
+    font-size: 0.74rem;
+    font-weight: 600;
+    cursor: pointer;
+    outline: none;
+  }
+  .shape-select option {
+    background: #0F172A;
+    color: #F1F5F9;
+  }
+
+  .element-strip {
+    display: flex;
+    gap: 6px;
+    overflow-x: auto;
+    padding-bottom: 2px;
+    scrollbar-width: thin;
+  }
+
+  .el-btn {
+    flex: 0 0 auto;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 6px 11px;
+    border-radius: 11px;
+    background: var(--bg-btn);
+    border: 1px solid var(--border-glass);
+    color: var(--text-main);
+    font-size: 0.78rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.15s ease;
+  }
+  .el-btn:hover {
+    background: var(--bg-btn-hover);
+    transform: translateY(-2px);
+  }
+  .el-btn.active {
+    border-color: var(--accent-primary);
+    background: rgba(0, 240, 255, 0.16);
+    box-shadow: 0 0 12px rgba(0, 240, 255, 0.28);
+  }
+  .el-btn.locked {
+    opacity: 0.45;
+    cursor: not-allowed;
+  }
+  .el-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 4px;
+    display: inline-block;
+    border: 1px solid rgba(255,255,255,0.3);
+  }
+  .cb-symbol {
+    font-family: var(--font-mono);
+    font-size: 0.68rem;
+    opacity: 0.85;
+  }
+
+  .hint-bar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    padding-top: 2px;
+  }
+
+  /* Toast Notification */
+  #toast-container {
+    position: fixed;
+    top: calc(max(10px, env(safe-area-inset-top)) + 58px);
+    right: max(14px, env(safe-area-inset-right));
+    z-index: 30;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    pointer-events: none;
+  }
+  .toast {
+    background: var(--bg-panel);
+    border: 1px solid var(--accent-gold);
+    color: var(--text-main);
+    padding: 10px 14px;
+    border-radius: 12px;
+    box-shadow: 0 10px 28px rgba(0,0,0,0.55);
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.82rem;
+    animation: slideInRight 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    max-width: 300px;
+  }
+  @keyframes slideInRight {
+    from { opacity: 0; transform: translateX(30px); }
+    to { opacity: 1; transform: translateX(0); }
+  }
+
+  /* Modal System */
+  .modal-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(3, 6, 15, 0.74);
+    backdrop-filter: blur(8px);
+    z-index: 50;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 16px;
+  }
+  .modal-backdrop.open { display: flex; }
+  .modal-card {
+    background: var(--bg-panel);
+    border: 1px solid var(--border-glass);
+    border-radius: 20px;
+    width: min(760px, 100%);
+    max-height: 85dvh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    box-shadow: 0 24px 60px rgba(0,0,0,0.65);
+  }
+  .modal-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border-glass);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .modal-header h2 {
+    font-size: 1.1rem;
+    color: var(--accent-primary);
+  }
+  .modal-body {
+    padding: 18px 20px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+    font-size: 0.88rem;
+    line-height: 1.5;
+  }
+  .grid-2 {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 10px;
+  }
+  .card-item {
+    background: var(--bg-btn);
+    border: 1px solid var(--border-glass);
+    border-radius: 12px;
+    padding: 10px 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+  }
+  .card-item.unlocked { border-color: var(--accent-gold); }
+  .setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 8px 0;
+    border-bottom: 1px solid rgba(255,255,255,0.06);
+    gap: 12px;
+  }
+  select, textarea {
+    background: rgba(0,0,0,0.35);
+    color: var(--text-main);
+    border: 1px solid var(--border-glass);
+    border-radius: 8px;
+    padding: 6px 10px;
+    font-family: inherit;
+    font-size: 0.82rem;
+  }
+
+  /* Responsive Mobile Adjustments */
+  @media (max-width: 768px) {
+    .telemetry-group .hide-sm { display: none; }
+    #tools-dock {
+      top: auto;
+      bottom: 152px;
+      left: 10px;
+      transform: none;
+      flex-direction: row;
+      padding: 4px;
+      max-width: calc(100vw - 20px);
+      overflow-x: auto;
+    }
+    #right-dock {
+      top: 60px;
+      right: 10px;
+      transform: none;
+      flex-direction: row;
+      padding: 4px;
+    }
+    #spatial-bar {
+      bottom: 110px;
+      padding: 4px 10px;
+    }
+    .tool-btn { width: 32px; height: 32px; font-size: 0.9rem; }
+    .speed-btn { width: 30px; font-size: 0.68rem; }
+    .divider-h { width: 1px; height: 22px; margin: 0 2px; }
+    .hint-bar { display: none; }
+  }
+</style>
+</head>
+<body>
+
+<canvas id="gl-canvas"></canvas>
+<div id="screen-vignette"></div>
+
+<!-- Top HUD Bar -->
+<header id="top-bar" class="glass">
+  <div class="brand-group">
+    <span class="game-badge" data-i18n="title">✦ 造物主紀元 3D</span>
+    <button id="btn-mode" class="mode-pill" data-i18n="mode_sandbox">3D 自由沙盒</button>
+  </div>
+
+  <div class="telemetry-group">
+    <div class="stat-chip aether" title="Aether Inspiration">
+      <span>✧</span><b id="hud-aether">0</b>
+    </div>
+    <div class="stat-chip" title="Active 3D Voxels">
+      <span data-i18n="stat_voxels">體素</span>:<b id="hud-voxels">0</b>
+    </div>
+    <div class="stat-chip hide-sm" title="Ambient Temperature">
+      <span>🌡</span><b id="hud-temp">22°C</b>
+    </div>
+    <div class="stat-chip" title="Discovered Elements">
+      <span>🧪</span><b id="hud-codex">10/24</b>
+    </div>
+    <div class="stat-chip hide-sm" id="fps-chip" style="display:none;">
+      <span>FPS:</span><b id="hud-fps">60</b>
+    </div>
+  </div>
+
+  <div class="action-group">
+    <button class="icon-btn" id="btn-codex">📖 <span class="hide-sm" data-i18n="btn_codex">圖鑑</span></button>
+    <button class="icon-btn" id="btn-trials">🎯 <span class="hide-sm" data-i18n="btn_modes">模式</span></button>
+    <button class="icon-btn" id="btn-achievements">🏆 <span class="hide-sm" id="hud-ach">0/16</span></button>
+    <button class="icon-btn" id="btn-settings">⚙️</button>
+    <button class="icon-btn" id="btn-mute">🔊</button>
+    <button class="icon-btn" id="btn-pause">⏸</button>
+  </div>
+</header>
+
+<!-- Trial Status Banner -->
+<div id="trial-banner" class="glass">
+  <span id="trial-title" style="font-weight:700; color:var(--accent-gold);">試煉 1</span>
+  <span id="trial-desc" style="color:var(--text-main);">目標描述</span>
+  <div class="trial-progress-bar"><div class="trial-progress-fill" id="trial-fill"></div></div>
+  <b id="trial-timer" style="font-family:var(--font-mono); color:var(--accent-primary);">60s</b>
+</div>
+
+<!-- Left Tools Dock -->
+<aside id="tools-dock" class="glass">
+  <button class="tool-btn active" data-tool="brush" title="3D 建造／圖形放置 (Build / B)">🖌️</button>
+  <button class="tool-btn" data-tool="orbit" title="360° 視角旋轉模式 (Orbit / V)">🔄</button>
+  <button class="tool-btn" data-tool="erase" title="空間橡皮擦 (Erase / E)">🧹</button>
+  <button class="tool-btn" data-tool="eyedropper" title="3D 吸管取樣 (Eyedropper / I)">💉</button>
+  <button class="tool-btn" data-tool="heat" title="立體加熱射線 (Heat Ray)">🔥</button>
+  <button class="tool-btn" data-tool="cool" title="絕對零度冷凍 (Freeze Ray)">❄️</button>
+  <button class="tool-btn" data-tool="vortex" title="3D 引力奇點 (Gravity Vortex)">🌀</button>
+  <div class="divider-h"></div>
+  <button class="tool-btn" id="btn-undo" title="時光回溯撤銷 (Undo / Ctrl+Z)">↩️</button>
+  <button class="tool-btn" id="btn-redo" title="重做 (Redo / Ctrl+Y)">↪️</button>
+  <button class="tool-btn" id="btn-reset" title="重置星海 (Reset / R)">🗑️</button>
+</aside>
+
+<!-- Right Speed & Apocalypse Dock -->
+<aside id="right-dock" class="glass">
+  <button class="speed-btn" data-speed="0">0x</button>
+  <button class="speed-btn" data-speed="0.5">0.5x</button>
+  <button class="speed-btn active" data-speed="1">1x</button>
+  <button class="speed-btn" data-speed="2">2x</button>
+  <div class="divider-h"></div>
+  <button class="tool-btn" id="btn-cam-reset" title="重置 3D 攝影機視角">🎥</button>
+  <button class="tool-btn" id="btn-apoc-blackhole" title="神蹟：黑洞吞噬清場">🕳️</button>
+  <button class="tool-btn" id="btn-apoc-nova" title="神蹟：超新星高溫爆發">☀️</button>
+  <button class="tool-btn" id="btn-apoc-rain" title="神蹟：創世高空甘霖">🌧️</button>
+</aside>
+
+<!-- 3D Spatial Controls Floating Pill -->
+<div id="spatial-bar" class="glass">
+  <span data-i18n="air_plane">建造高度 Y</span>:<b id="plane-y-val">18</b>
+  <input type="range" id="plane-y-slider" min="1" max="47" value="18" />
+  <span style="opacity:0.4;">|</span>
+  <span data-i18n="slice_y">剖面切層</span>:<b id="slice-y-val">48</b>
+  <input type="range" id="slice-y-slider" min="2" max="48" value="48" />
+  <button class="icon-btn" id="btn-auto-rotate" style="padding:2px 8px; font-size:0.72rem;">🌐 Auto-Spin</button>
+</div>
+
+<!-- Bottom Element Palette & 3D Geometric Shapes -->
+<footer id="bottom-dock" class="glass">
+  <div class="dock-header-row">
+    <div class="cat-tabs" id="cat-tabs">
+      <button class="cat-tab active" data-cat="all" data-i18n="cat_all">全部</button>
+      <button class="cat-tab" data-cat="basic" data-i18n="cat_basic">基礎</button>
+      <button class="cat-tab" data-cat="thermal" data-i18n="cat_thermal">熱能</button>
+      <button class="cat-tab" data-cat="life" data-i18n="cat_life">生命</button>
+      <button class="cat-tab" data-cat="chem" data-i18n="cat_chem">化學</button>
+      <button class="cat-tab" data-cat="cosmic" data-i18n="cat_cosmic">奇幻</button>
+    </div>
+
+    <div class="brush-control">
+      <!-- 3D Basic Shapes Selector -->
+      <select id="shape-select" class="shape-select" title="選擇 3D 基礎幾何圖形">
+        <option value="brush_sphere" data-i18n="shape_brush_sphere">🖌️ 連續球刷</option>
+        <option value="stamp_cube" data-i18n="shape_cube">🧊 實心立方體</option>
+        <option value="stamp_hollow_box" data-i18n="shape_hollow_box">📦 空心容器箱</option>
+        <option value="stamp_sphere" data-i18n="shape_sphere">🔮 實心球體</option>
+        <option value="stamp_hollow_sphere" data-i18n="shape_hollow_sphere">🫧 空心球殼</option>
+        <option value="stamp_pyramid" data-i18n="shape_pyramid">🔺 3D 金字塔</option>
+        <option value="stamp_cylinder" data-i18n="shape_cylinder">🛢️ 3D 圓柱體</option>
+        <option value="stamp_torus" data-i18n="shape_torus">🍩 3D 能量星環</option>
+      </select>
+
+      <span data-i18n="brush_size">尺寸</span>:<b id="brush-val">2</b>
+      <input type="range" id="brush-slider" min="1" max="10" value="2" />
+      <button class="icon-btn" id="btn-gravity-dir" style="padding:2px 7px; font-size:0.72rem;" title="重力方向">⬇ G</button>
+    </div>
+  </div>
+
+  <div class="element-strip" id="element-strip"></div>
+
+  <div class="hint-bar">
+    <span id="hover-inspector" data-i18n="hint_inspect">移動滑鼠至 3D 空間檢視體素座標與溫度</span>
+    <span data-i18n="hint_controls">左鍵放置圖形 · 右鍵拖曳旋轉 360° · 滾輪縮放 · P 暫停 · R 重置</span>
+  </div>
+</footer>
+
+<!-- Toast Container -->
+<div id="toast-container"></div>
+
+<!-- Universal Modal -->
+<div class="modal-backdrop" id="modal-backdrop">
+  <div class="modal-card">
+    <div class="modal-header">
+      <h2 id="modal-title">標題</h2>
+      <button class="icon-btn" id="modal-close">✕</button>
+    </div>
+    <div class="modal-body" id="modal-body"></div>
+  </div>
+</div>
+
+<script>
+/**
+ * ============================================================================
+ * 1. ELEMENT REGISTRY & 3D VOXEL CONFIGURATION (24 Elements)
+ * ============================================================================
+ */
+const ELEMENTS = [
+  { id: 1,  key: 'sand',      cat: 'basic',   type: 'powder',  density: 60,  temp: 22,   flam: 0,    color: [0.90, 0.76, 0.48], hex: '#E6C27A', sym: 'SD', unlockedByDefault: true },
+  { id: 2,  key: 'water',     cat: 'basic',   type: 'liquid',  density: 30,  temp: 18,   flam: 0,    color: [0.16, 0.71, 0.96], hex: '#29B6F6', sym: 'WT', unlockedByDefault: true },
+  { id: 3,  key: 'stone',     cat: 'basic',   type: 'solid',   density: 100, temp: 20,   flam: 0,    color: [0.47, 0.52, 0.59], hex: '#788496', sym: 'ST', unlockedByDefault: true },
+  { id: 4,  key: 'soil',      cat: 'basic',   type: 'powder',  density: 58,  temp: 20,   flam: 0,    color: [0.47, 0.33, 0.28], hex: '#795548', sym: 'SL', unlockedByDefault: true },
+  { id: 5,  key: 'fire',      cat: 'thermal', type: 'gas',     density: -15, temp: 550,  flam: 0,    color: [1.00, 0.34, 0.13], hex: '#FF5722', sym: 'FR', unlockedByDefault: true, glow: 1.0 },
+  { id: 6,  key: 'lava',      cat: 'thermal', type: 'liquid',  density: 85,  temp: 950,  flam: 0,    color: [1.00, 0.24, 0.00], hex: '#FF3D00', sym: 'LV', unlockedByDefault: true, glow: 0.9 },
+  { id: 7,  key: 'ice',       cat: 'thermal', type: 'solid',   density: 90,  temp: -25,  flam: 0,    color: [0.70, 0.90, 0.99], hex: '#B3E5FC', sym: 'IC', unlockedByDefault: true },
+  { id: 8,  key: 'seed',      cat: 'life',    type: 'powder',  density: 45,  temp: 22,   flam: 0.4,  color: [0.68, 0.84, 0.51], hex: '#AED581', sym: 'SE', unlockedByDefault: true },
+  { id: 9,  key: 'wood',      cat: 'life',    type: 'solid',   density: 95,  temp: 22,   flam: 0.25, color: [0.43, 0.30, 0.25], hex: '#6D4C41', sym: 'WD', unlockedByDefault: true },
+  { id: 10, key: 'gunpowder', cat: 'chem',    type: 'powder',  density: 55,  temp: 22,   flam: 0.9,  color: [0.26, 0.26, 0.26], hex: '#424242', sym: 'GP', unlockedByDefault: true },
+
+  // Discoverable / Unlockable Elements (11 - 24)
+  { id: 11, key: 'steam',     cat: 'thermal', type: 'gas',     density: -20, temp: 115,  flam: 0,    color: [0.81, 0.85, 0.86], hex: '#CFD8DC', sym: 'SM', unlockedByDefault: false, recipeHint: 'water + fire/lava' },
+  { id: 12, key: 'obsidian',  cat: 'basic',   type: 'solid',   density: 100, temp: 40,   flam: 0,    color: [0.22, 0.12, 0.58], hex: '#311B92', sym: 'OB', unlockedByDefault: false, recipeHint: 'lava + water' },
+  { id: 13, key: 'glass',     cat: 'chem',    type: 'solid',   density: 100, temp: 35,   flam: 0,    color: [0.50, 0.87, 0.92], hex: '#80DEEA', sym: 'GL', unlockedByDefault: false, recipeHint: 'sand + lava/lightning' },
+  { id: 14, key: 'plant',     cat: 'life',    type: 'solid',   density: 92,  temp: 22,   flam: 0.35, color: [0.00, 0.90, 0.46], hex: '#00E676', sym: 'PL', unlockedByDefault: false, recipeHint: 'seed + water/soil' },
+  { id: 15, key: 'mycelium',  cat: 'life',    type: 'solid',   density: 92,  temp: 20,   flam: 0.3,  color: [0.88, 0.25, 0.98], hex: '#E040FB', sym: 'MY', unlockedByDefault: false, recipeHint: 'plant + acid/nuclear', glow: 0.85 },
+  { id: 16, key: 'firefly',   cat: 'life',    type: 'creature',density: 5,   temp: 25,   flam: 0.5,  color: [0.80, 1.00, 0.56], hex: '#CCFF90', sym: 'FF', unlockedByDefault: false, recipeHint: 'dense flora + water', glow: 1.0 },
+  { id: 17, key: 'acid',      cat: 'chem',    type: 'liquid',  density: 32,  temp: 25,   flam: 0,    color: [0.46, 1.00, 0.01], hex: '#76FF03', sym: 'AC', unlockedByDefault: false, recipeHint: 'water + gunpowder', glow: 0.7 },
+  { id: 18, key: 'oil',       cat: 'chem',    type: 'liquid',  density: 20,  temp: 22,   flam: 0.75, color: [0.24, 0.15, 0.14], hex: '#3E2723', sym: 'OL', unlockedByDefault: false, recipeHint: 'plant + lava' },
+  { id: 19, key: 'metal',     cat: 'chem',    type: 'solid',   density: 100, temp: 22,   flam: 0,    color: [0.69, 0.75, 0.77], hex: '#B0BEC5', sym: 'MT', unlockedByDefault: false, recipeHint: 'stone + lightning' },
+  { id: 20, key: 'lightning', cat: 'cosmic',  type: 'energy',  density: -50, temp: 1200, flam: 0,    color: [0.00, 0.90, 1.00], hex: '#00E5FF', sym: 'LT', unlockedByDefault: false, recipeHint: 'steam + fire', glow: 1.0 },
+  { id: 21, key: 'nuclear',   cat: 'cosmic',  type: 'powder',  density: 80,  temp: 85,   flam: 0.1,  color: [0.00, 1.00, 0.40], hex: '#00FF66', sym: 'NU', unlockedByDefault: false, recipeHint: 'metal + acid', glow: 0.9 },
+  { id: 22, key: 'gold',      cat: 'cosmic',  type: 'powder',  density: 95,  temp: 25,   flam: 0,    color: [1.00, 0.84, 0.00], hex: '#FFD700', sym: 'AU', unlockedByDefault: false, recipeHint: 'metal + lightning', glow: 0.8 },
+  { id: 23, key: 'antimatter',cat: 'cosmic',  type: 'gas',     density: -5,  temp: -100, flam: 0,    color: [1.00, 0.09, 0.27], hex: '#FF1744', sym: 'AM', unlockedByDefault: false, recipeHint: 'nuclear + lightning', glow: 1.0 },
+  { id: 24, key: 'ash',       cat: 'basic',   type: 'powder',  density: 35,  temp: 45,   flam: 0,    color: [0.62, 0.62, 0.62], hex: '#9E9E9E', sym: 'AS', unlockedByDefault: false, recipeHint: 'wood/plant + fire' }
+];
+
+const EL_MAP = {};
+ELEMENTS.forEach(e => EL_MAP[e.id] = e);
+
+const TRIAL_LEVELS = [
+  { id: 1, key: 't1', targetEl: 14, targetCount: 350, timeLimit: 60, preset: 'oasis' },
+  { id: 2, key: 't2', targetEl: 13, targetCount: 180, timeLimit: 55, preset: 'desert' },
+  { id: 3, key: 't3', targetEl: 12, targetCount: 220, timeLimit: 50, preset: 'volcano' },
+  { id: 4, key: 't4', targetEl: 16, targetCount: 24,  timeLimit: 75, preset: 'forest' },
+  { id: 5, key: 't5', targetEl: 22, targetCount: 80,  timeLimit: 70, preset: 'forge' },
+  { id: 6, key: 't6', targetEl: 15, targetCount: 160, timeLimit: 65, preset: 'cavern' }
+];
+
+const ACHIEVEMENTS_DEF = [
+  { id: 'first_spark',  icon: '🔥', cond: s => s.totalReactions >= 1 },
+  { id: 'rainmaker',    icon: '🌧️', cond: s => s.discovered.includes(11) },
+  { id: 'glassblower',  icon: '🔮', cond: s => s.discovered.includes(13) },
+  { id: 'botanist',     icon: '🌿', cond: s => s.discovered.includes(14) },
+  { id: 'shepherd',     icon: '✨', cond: s => s.discovered.includes(16) },
+  { id: 'alchemist',    icon: '👑', cond: s => s.discovered.includes(22) },
+  { id: 'nuclear_age',  icon: '☢️', cond: s => s.discovered.includes(21) },
+  { id: 'void_walker',  icon: '⚛️', cond: s => s.discovered.includes(23) },
+  { id: 'chain_10',     icon: '⚡', cond: s => s.maxCombo >= 10 },
+  { id: 'chain_30',     icon: '💥', cond: s => s.maxCombo >= 30 },
+  { id: 'creator_1k',   icon: '🎨', cond: s => s.totalCreated >= 1000 },
+  { id: 'creator_10k',  icon: '🌌', cond: s => s.totalCreated >= 10000 },
+  { id: 'reaction_500', icon: '🧪', cond: s => s.totalReactions >= 500 },
+  { id: 'apocalypse',   icon: '🕳️', cond: s => s.apocCount >= 1 },
+  { id: 'trial_winner', icon: '🎯', cond: s => s.trialsCleared >= 1 },
+  { id: 'omniscient',   icon: '👁️', cond: s => s.discovered.length >= 24 }
+];
+
+/**
+ * ============================================================================
+ * 2. I18N LOCALIZATION DICTIONARY (zh-TW, zh-CN, en)
+ * ============================================================================
+ */
+const I18N_DICT = {
+  'zh-TW': {
+    title: '✦ 造物主紀元 3D',
+    mode_sandbox: '3D 自由沙盒',
+    mode_trial: '3D 創世試煉',
+    mode_daily: '每日星象',
+    stat_voxels: '體素',
+    btn_codex: '圖鑑',
+    btn_modes: '模式',
+    cat_all: '全部', cat_basic: '基礎', cat_thermal: '熱能', cat_life: '生命', cat_chem: '化學', cat_cosmic: '奇幻',
+    brush_size: '尺寸',
+    air_plane: '建造高度 Y',
+    slice_y: '剖面切層',
+    shape_brush_sphere: '🖌️ 連續球刷',
+    shape_cube: '🧊 實心立方體',
+    shape_hollow_box: '📦 空心容器箱',
+    shape_sphere: '🔮 實心球體',
+    shape_hollow_sphere: '🫧 空心球殼',
+    shape_pyramid: '🔺 3D 金字塔',
+    shape_cylinder: '🛢️ 3D 圓柱體',
+    shape_torus: '🍩 3D 能量星環',
+    hint_inspect: '移動滑鼠至 3D 空間檢視體素座標與溫度',
+    hint_controls: '左鍵放置圖形 · 右鍵拖曳旋轉 360° · 滾輪縮放 · P 暫停 · R 重置',
+    vacuum: '虛無空間',
+    el_sand: '3D 沙粒', el_water: '立體純水', el_stone: '花崗岩', el_soil: '肥沃泥土',
+    el_fire: '星火烈焰', el_lava: '地心熔岩', el_ice: '永凍寒冰', el_seed: '生命種子',
+    el_wood: '世界樹幹', el_gunpowder: '黑火藥', el_steam: '上升蒸汽', el_obsidian: '黑曜石',
+    el_glass: '結晶琉璃', el_plant: '立體植被', el_mycelium: '發光菌絲', el_firefly: '3D 微光精靈',
+    el_acid: '腐蝕強酸', el_oil: '深層原油', el_metal: '秘銀金屬', el_lightning: '天罰雷電',
+    el_nuclear: '核燃料', el_gold: '煉金黃金', el_antimatter: '反物質', el_ash: '餘燼灰',
+    codex_title: '📖 3D 萬物創世圖鑑 & 化學配方',
+    modes_title: '🎯 3D 創世模式與試煉關卡',
+    ach_title: '🏆 造物主神格成就',
+    settings_title: '⚙️ 系統設定與 3D 空間參數',
+    t1_name: '試煉 I：立體綠洲島', t1_desc: '在浮空島上培育至少 350 顆「立體植被」',
+    t2_name: '試煉 II：琉璃金字塔', t2_desc: '將 3D 沙丘熔煉出 180 顆「結晶琉璃」',
+    t3_name: '試煉 III：火山與冰河', t3_desc: '冷卻立體火山口結晶出 220 顆「黑曜石」',
+    t4_name: '試煉 IV：微光生態林', t4_desc: '孕育出 24 隻在三維空間飛舞的「微光精靈」',
+    t5_name: '試煉 V：煉金術師之塔', t5_desc: '提煉出 80 單位「煉金黃金」',
+    t6_name: '試煉 VI：地下發光菌窟', t6_desc: '培養 160 顆發光的「發光菌絲」',
+    ach_first_spark: '初火點燃：觸發第一次 3D 化學反應',
+    ach_rainmaker: '喚雨之神：發現「上升蒸汽」',
+    ach_glassblower: '琉璃匠師：合成「結晶琉璃」',
+    ach_botanist: '生命播種者：培育出「立體植被」',
+    ach_shepherd: '微光牧羊人：誕生「3D 微光精靈」',
+    ach_alchemist: '大煉金術師：提煉「煉金黃金」',
+    ach_nuclear_age: '核子紀元：發現「核燃料」',
+    ach_void_walker: '虛空掌控者：合成「反物質」',
+    ach_chain_10: '元素共鳴：達成 10 連鎖反應',
+    ach_chain_30: '創世狂熱：達成 30 連鎖反應',
+    ach_creator_1k: '微觀建築師：累計創造 1,000 體素',
+    ach_creator_10k: '星海造物主：累計創造 10,000 體素',
+    ach_reaction_500: '混沌實驗家：累計觸發 500 次反應',
+    ach_apocalypse: '末日審判者：釋放一次清場神蹟',
+    ach_trial_winner: '試煉征服者：通過任一 3D 創世試煉',
+    ach_omniscient: '全知全能：解鎖全部 24 種元素',
+    new_discovery: '✨ 發現新體素：',
+    ach_unlocked: '🏆 解鎖成就：',
+    trial_win: '🎉 3D 試煉達成！獲得獎勵 +250 乙太！',
+    trial_fail: '⏳ 時間到！未能達成生態指標，按 R 重試。'
+  },
+  'zh-CN': {
+    title: '✦ 造物主纪元 3D',
+    mode_sandbox: '3D 自由沙盒',
+    mode_trial: '3D 创世试炼',
+    mode_daily: '每日星象',
+    stat_voxels: '体素',
+    btn_codex: '图鉴',
+    btn_modes: '模式',
+    cat_all: '全部', cat_basic: '基础', cat_thermal: '热能', cat_life: '生命', cat_chem: '化学', cat_cosmic: '奇幻',
+    brush_size: '尺寸',
+    air_plane: '建造高度 Y',
+    slice_y: '剖面切层',
+    shape_brush_sphere: '🖌️ 连续球刷',
+    shape_cube: '🧊 实心立方体',
+    shape_hollow_box: '📦 空心容器箱',
+    shape_sphere: '🔮 实心球体',
+    shape_hollow_sphere: '🫧 空心球壳',
+    shape_pyramid: '🔺 3D 金字塔',
+    shape_cylinder: '🛢️ 3D 圆柱体',
+    shape_torus: '🍩 3D 能量星环',
+    hint_inspect: '移动鼠标至 3D 空间检视体素坐标与温度',
+    hint_controls: '左键放置图形 · 右键拖拽旋转 360° · 滚轮缩放 · P 暂停 · R 重置',
+    vacuum: '虚无空间',
+    el_sand: '3D 沙粒', el_water: '立体纯水', el_stone: '花岗岩', el_soil: '肥沃泥土',
+    el_fire: '星火烈焰', el_lava: '地心熔岩', el_ice: '永冻寒冰', el_seed: '生命种子',
+    el_wood: '世界树干', el_gunpowder: '黑火药', el_steam: '上升蒸汽', el_obsidian: '黑曜石',
+    el_glass: '结晶琉璃', el_plant: '立体植被', el_mycelium: '发光菌丝', el_firefly: '3D 微光精灵',
+    el_acid: '腐蚀强酸', el_oil: '深层原油', el_metal: '秘银金属', el_lightning: '天罚雷电',
+    el_nuclear: '核燃料', el_gold: '炼金黄金', el_antimatter: '反物质', el_ash: '余烬灰',
+    codex_title: '📖 3D 万物创世图鉴 & 化学配方',
+    modes_title: '🎯 3D 创世模式与试炼关卡',
+    ach_title: '🏆 造物主神格成就',
+    settings_title: '⚙️ 系统设置与 3D 空间参数',
+    t1_name: '试炼 I：立体绿洲岛', t1_desc: '在浮空岛上培育至少 350 颗「立体植被」',
+    t2_name: '试炼 II：琉璃金字塔', t2_desc: '将 3D 沙丘熔炼出 180 颗「结晶琉璃」',
+    t3_name: '试炼 III：火山与冰河', t3_desc: '冷却立体火山口结晶出 220 颗「黑曜石」',
+    t4_name: '试炼 IV：微光生态林', t4_desc: '孕育出 24 只在三维空间飞舞的「微光精灵」',
+    t5_name: '试炼 V：炼金术师之塔', t5_desc: '提炼出 80 单位「炼金黄金」',
+    t6_name: '试炼 VI：地下发光菌窟', t6_desc: '培养 160 颗发光的「发光菌丝」',
+    ach_first_spark: '初火点燃：触发第一次 3D 化学反应',
+    ach_rainmaker: '唤雨之神：发现「上升蒸汽」',
+    ach_glassblower: '琉璃匠师：合成「结晶琉璃」',
+    ach_botanist: '生命播种者：培育出「立体植被」',
+    ach_shepherd: '微光牧羊人：诞生「3D 微光精灵」',
+    ach_alchemist: '大炼金术师：提炼「炼金黄金」',
+    ach_nuclear_age: '核子纪元：发现「核燃料」',
+    ach_void_walker: '虚空掌控者：合成「反物质」',
+    ach_chain_10: '元素共鸣：达成 10 连锁反应',
+    ach_chain_30: '创世狂热：达成 30 连锁反应',
+    ach_creator_1k: '微观建筑师：累计创造 1,000 体素',
+    ach_creator_10k: '星海造物主：累计创造 10,000 体素',
+    ach_reaction_500: '混沌实验家：累计触发 500 次反应',
+    ach_apocalypse: '末日审判者：释放一次清场神迹',
+    ach_trial_winner: '试炼征服者：通过任一 3D 创世试炼',
+    ach_omniscient: '全知全能：解锁全部 24 种元素',
+    new_discovery: '✨ 发现新体素：',
+    ach_unlocked: '🏆 解锁成就：',
+    trial_win: '🎉 3D 试炼达成！获得奖励 +250 乙太！',
+    trial_fail: '⏳ 时间到！未能达成生态指标，按 R 重试。'
+  },
+  'en': {
+    title: '✦ AETHERIA 3D',
+    mode_sandbox: '3D Sandbox',
+    mode_trial: '3D Trials',
+    mode_daily: 'Daily Seed',
+    stat_voxels: 'Voxels',
+    btn_codex: 'Codex',
+    btn_modes: 'Modes',
+    cat_all: 'All', cat_basic: 'Basic', cat_thermal: 'Thermal', cat_life: 'Life', cat_chem: 'Chem', cat_cosmic: 'Cosmic',
+    brush_size: 'Size',
+    air_plane: 'Build Plane Y',
+    slice_y: 'Slice Y',
+    shape_brush_sphere: '🖌️ Free Brush',
+    shape_cube: '🧊 Solid Cube',
+    shape_hollow_box: '📦 Hollow Box',
+    shape_sphere: '🔮 Solid Sphere',
+    shape_hollow_sphere: '🫧 Hollow Dome',
+    shape_pyramid: '🔺 3D Pyramid',
+    shape_cylinder: '🛢️ 3D Cylinder',
+    shape_torus: '🍩 3D Energy Torus',
+    hint_inspect: 'Hover 3D space to inspect voxel coordinates & temperature',
+    hint_controls: 'LMB Place Shape · RMB Orbit 360° · Wheel Zoom · P Pause · R Reset',
+    vacuum: 'Empty Void',
+    el_sand: '3D Sand', el_water: 'Voxel Water', el_stone: 'Granite', el_soil: 'Fertile Soil',
+    el_fire: 'Star Fire', el_lava: 'Core Lava', el_ice: 'Permafrost', el_seed: 'Life Seed',
+    el_wood: 'World Wood', el_gunpowder: 'Gunpowder', el_steam: 'Steam', el_obsidian: 'Obsidian',
+    el_glass: 'Crystal Glass', el_plant: '3D Flora', el_mycelium: 'Mycelium', el_firefly: '3D Firefly',
+    el_acid: 'Corrosive Acid', el_oil: 'Crude Oil', el_metal: 'Mithril Metal', el_lightning: 'Lightning',
+    el_nuclear: 'Nuclear Fuel', el_gold: 'Alchemic Gold', el_antimatter: 'Antimatter', el_ash: 'Ember Ash',
+    codex_title: '📖 3D Voxel Codex & Alchemy Recipes',
+    modes_title: '🎯 3D Game Modes & Genesis Trials',
+    ach_title: '🏆 Creator Divinity Achievements',
+    settings_title: '⚙️ System Settings & 3D World Parameters',
+    t1_name: 'Trial I: Floating Oasis', t1_desc: 'Grow at least 350 voxels of 3D Flora',
+    t2_name: 'Trial II: Glass Pyramid', t2_desc: 'Smelt 180 voxels of Crystal Glass from sand dunes',
+    t3_name: 'Trial III: Volcano & Glacier', t3_desc: 'Cool the 3D volcano into 220 voxels of Obsidian',
+    t4_name: 'Trial IV: Bioluminescent Woods', t4_desc: 'Nurture 24 flying 3D Fireflies in space',
+    t5_name: 'Trial V: Alchemist Tower', t5_desc: 'Transmute 80 units of Alchemic Gold',
+    t6_name: 'Trial VI: Abyssal Fungal Cave', t6_desc: 'Cultivate 160 voxels of glowing Mycelium',
+    ach_first_spark: 'First Spark: Trigger your first 3D reaction',
+    ach_rainmaker: 'Rainmaker: Discover Rising Steam',
+    ach_glassblower: 'Glassblower: Synthesize Crystal Glass',
+    ach_botanist: 'Botanist: Grow 3D Flora',
+    ach_shepherd: 'Light Shepherd: Birth a 3D Firefly',
+    ach_alchemist: 'Grand Alchemist: Transmute Gold',
+    ach_nuclear_age: 'Atomic Age: Discover Nuclear Fuel',
+    ach_void_walker: 'Void Walker: Synthesize Antimatter',
+    ach_chain_10: 'Resonance: Reach a 10x reaction chain',
+    ach_chain_30: 'Genesis Overdrive: Reach a 30x reaction chain',
+    ach_creator_1k: 'Micro Architect: Create 1,000 voxels',
+    ach_creator_10k: 'Star Weaver: Create 10,000 voxels',
+    ach_reaction_500: 'Chaos Theorist: Trigger 500 reactions',
+    ach_apocalypse: 'Judgment Day: Unleash a Divine Wipe',
+    ach_trial_winner: 'Trial Conqueror: Clear any 3D Genesis Trial',
+    ach_omniscient: 'Omniscient: Unlock all 24 elements',
+    new_discovery: '✨ Discovered: ',
+    ach_unlocked: '🏆 Achievement: ',
+    trial_win: '🎉 3D Trial Cleared! +250 Aether Awarded!',
+    trial_fail: '⏳ Time Up! Press R to retry.'
+  }
+};
+
+/**
+ * ============================================================================
+ * 3. DYNAMIC THEME ENGINE (4 Visual Themes)
+ * ============================================================================
+ */
+const THEMES = {
+  neon: {
+    name: { 'zh-TW': '秘法霓虹', 'zh-CN': '秘法霓虹', 'en': 'Arcane Neon' },
+    bgCanvas: '#060914', clearColor: [0.024, 0.035, 0.078],
+    bgHud: 'rgba(12, 19, 36, 0.78)', bgPanel: 'rgba(16, 25, 46, 0.94)',
+    textMain: '#F1F5F9', textMuted: '#94A3B8',
+    accentPrimary: '#00F0FF', accentSecondary: '#FF2A85',
+    boxColor: [0.0, 0.94, 1.0, 0.22]
+  },
+  parchment: {
+    name: { 'zh-TW': '星際手稿', 'zh-CN': '星际手稿', 'en': 'Alchemist Parchment' },
+    bgCanvas: '#EAE2D3', clearColor: [0.918, 0.886, 0.827],
+    bgHud: 'rgba(235, 226, 210, 0.88)', bgPanel: 'rgba(245, 238, 224, 0.96)',
+    textMain: '#2C221E', textMuted: '#6E5D53',
+    accentPrimary: '#8C3B2B', accentSecondary: '#2B5B6C',
+    boxColor: [0.55, 0.23, 0.17, 0.28]
+  },
+  cyber: {
+    name: { 'zh-TW': '賽博熔爐', 'zh-CN': '赛博熔炉', 'en': 'Cyber Dark' },
+    bgCanvas: '#050505', clearColor: [0.02, 0.02, 0.02],
+    bgHud: 'rgba(18, 18, 20, 0.84)', bgPanel: 'rgba(24, 24, 28, 0.95)',
+    textMain: '#FAFAFA', textMuted: '#A1A1AA',
+    accentPrimary: '#FF5E00', accentSecondary: '#00FF66',
+    boxColor: [1.0, 0.37, 0.0, 0.25]
+  },
+  retro: {
+    name: { 'zh-TW': '復古街機', 'zh-CN': '复古街机', 'en': 'Retro Arcade' },
+    bgCanvas: '#1A1423', clearColor: [0.102, 0.078, 0.137],
+    bgHud: 'rgba(42, 28, 58, 0.86)', bgPanel: 'rgba(52, 35, 72, 0.95)',
+    textMain: '#FFF8E7', textMuted: '#C7B8EA',
+    accentPrimary: '#FFD166', accentSecondary: '#06D6A0',
+    boxColor: [1.0, 0.82, 0.4, 0.25]
+  }
+};
+
+/**
+ * ============================================================================
+ * 4. WEB AUDIO PROCEDURAL SYNTHESIZER
+ * ============================================================================
+ */
+class AudioEngine {
+  constructor() {
+    this.ctx = null;
+    this.muted = false;
+    this.sfxVol = 0.65;
+    this.bgmVol = 0.35;
+    this.pentatonic = [261.63, 293.66, 329.63, 392.00, 440.00, 523.25, 587.33, 659.25, 783.99, 880.00];
+    this.lastBrushSound = 0;
+    this.ambientGain = null;
+  }
+
+  init() {
+    if (!this.ctx) {
+      const AudioCtx = window.AudioContext || window.webkitAudioContext;
+      this.ctx = new AudioCtx();
+      this.startAmbientDrone();
+    }
+    if (this.ctx.state === 'suspended' && !this.muted) this.ctx.resume();
+  }
+
+  startAmbientDrone() {
+    if (!this.ctx) return;
+    try {
+      const osc = this.ctx.createOscillator();
+      const filter = this.ctx.createBiquadFilter();
+      this.ambientGain = this.ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.value = 65.41;
+      filter.type = 'lowpass';
+      filter.frequency.value = 170;
+      this.ambientGain.gain.value = this.muted ? 0 : this.bgmVol * 0.12;
+      osc.connect(filter);
+      filter.connect(this.ambientGain);
+      this.ambientGain.connect(this.ctx.destination);
+      osc.start();
+    } catch (e) {}
+  }
+
+  updateVolumes() {
+    if (this.ambientGain && this.ctx) {
+      this.ambientGain.gain.setTargetAtTime(this.muted ? 0 : this.bgmVol * 0.12, this.ctx.currentTime, 0.1);
+    }
+  }
+
+  playTone(freq, type = 'sine', duration = 0.15, vol = 0.2, slideTo = null) {
+    if (this.muted || this.sfxVol <= 0) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    const osc = this.ctx.createOscillator();
+    const gain = this.ctx.createGain();
+    osc.type = type;
+    osc.frequency.setValueAtTime(freq, now);
+    if (slideTo) osc.frequency.exponentialRampToValueAtTime(slideTo, now + duration);
+    const finalVol = vol * this.sfxVol;
+    gain.gain.setValueAtTime(finalVol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    osc.connect(gain);
+    gain.connect(this.ctx.destination);
+    osc.start(now);
+    osc.stop(now + duration);
+  }
+
+  playNoise(duration = 0.12, filterFreq = 1200, vol = 0.15) {
+    if (this.muted || this.sfxVol <= 0) return;
+    this.init();
+    const now = this.ctx.currentTime;
+    const bufferSize = this.ctx.sampleRate * duration;
+    const buffer = this.ctx.createBuffer(1, bufferSize, this.ctx.sampleRate);
+    const data = buffer.getChannelData(0);
+    for (let i = 0; i < bufferSize; i++) data[i] = Math.random() * 2 - 1;
+    const noise = this.ctx.createBufferSource();
+    noise.buffer = buffer;
+    const filter = this.ctx.createBiquadFilter();
+    filter.type = 'bandpass';
+    filter.frequency.value = filterFreq;
+    const gain = this.ctx.createGain();
+    gain.gain.setValueAtTime(vol * this.sfxVol, now);
+    gain.gain.exponentialRampToValueAtTime(0.001, now + duration);
+    noise.connect(filter);
+    filter.connect(gain);
+    gain.connect(this.ctx.destination);
+    noise.start(now);
+  }
+
+  playBrush(elId) {
+    const now = performance.now();
+    if (now - this.lastBrushSound < 55) return;
+    this.lastBrushSound = now;
+    const el = EL_MAP[elId];
+    if (!el) return;
+    if (el.type === 'liquid') this.playTone(420 + Math.random() * 180, 'sine', 0.07, 0.08, 680);
+    else if (el.type === 'powder') this.playNoise(0.05, 2200, 0.07);
+    else if (el.type === 'gas' || el.type === 'energy') this.playNoise(0.07, 900, 0.1);
+    else this.playTone(180 + Math.random() * 40, 'triangle', 0.06, 0.09);
+  }
+
+  playStamp() {
+    this.playTone(220, 'triangle', 0.16, 0.22, 440);
+  }
+
+  playReaction(combo = 1) {
+    const idx = Math.min(combo % this.pentatonic.length, this.pentatonic.length - 1);
+    this.playTone(this.pentatonic[idx], 'sine', 0.22, 0.14);
+  }
+
+  playDiscovery() {
+    [523.25, 659.25, 783.99, 1046.50].forEach((f, i) => {
+      setTimeout(() => this.playTone(f, 'triangle', 0.35, 0.22), i * 75);
+    });
+  }
+
+  playExplosion() {
+    this.playTone(110, 'sawtooth', 0.45, 0.32, 28);
+    this.playNoise(0.4, 320, 0.28);
+  }
+
+  playClick() { this.playTone(720, 'sine', 0.06, 0.12); }
+  playHover() { this.playTone(960, 'sine', 0.03, 0.04); }
+}
+
+/**
+ * ============================================================================
+ * 5. SAVE & ACHIEVEMENT MANAGER
+ * ============================================================================
+ */
+class SaveManager {
+  constructor() {
+    this.STORAGE_KEY = 'aetheria_3d_voxel_save_v2';
+    this.data = this.load();
+  }
+
+  getDefault() {
+    return {
+      lang: 'zh-TW',
+      theme: 'neon',
+      gridSize: 48,
+      shake: 1,
+      showFps: false,
+      colorblind: false,
+      autoPause: true,
+      aether: 100,
+      discovered: ELEMENTS.filter(e => e.unlockedByDefault).map(e => e.id),
+      achievements: [],
+      clearedTrials: [],
+      stats: { totalCreated: 0, totalReactions: 0, maxCombo: 0, apocCount: 0, trialsCleared: 0 }
+    };
+  }
+
+  load() {
+    try {
+      const raw = localStorage.getItem(this.STORAGE_KEY);
+      if (!raw) return this.getDefault();
+      const parsed = JSON.parse(raw);
+      return { ...this.getDefault(), ...parsed, stats: { ...this.getDefault().stats, ...(parsed.stats || {}) } };
+    } catch (e) { return this.getDefault(); }
+  }
+
+  save() {
+    try { localStorage.setItem(this.STORAGE_KEY, JSON.stringify(this.data)); } catch (e) {}
+  }
+
+  exportString() { return btoa(unescape(encodeURIComponent(JSON.stringify(this.data)))); }
+
+  importString(str) {
+    try {
+      const json = decodeURIComponent(escape(atob(str.trim())));
+      const parsed = JSON.parse(json);
+      if (!parsed || !Array.isArray(parsed.discovered)) return false;
+      this.data = { ...this.getDefault(), ...parsed };
+      this.save();
+      return true;
+    } catch (e) { return false; }
+  }
+
+  resetAll() {
+    this.data = this.getDefault();
+    this.save();
+  }
+}
+
+/**
+ * ============================================================================
+ * 6. 3D VOXEL CELLULAR AUTOMATA PHYSICS ENGINE (N x N x N TypedArray)
+ * ============================================================================
+ */
+class VoxelSimulation3D {
+  constructor(size = 48) {
+    this.resize(size);
+    this.gravityDir = 1; // 1: Down (-Y), -1: Up (+Y), 0: Zero-G
+    this.ambientTemp = 22;
+    this.undoStack = [];
+    this.redoStack = [];
+  }
+
+  resize(size) {
+    this.size = size;
+    this.total = size * size * size;
+    this.type = new Uint8Array(this.total);
+    this.temp = new Float32Array(this.total);
+    this.life = new Uint16Array(this.total);
+    this.updated = new Uint8Array(this.total);
+    this.temp.fill(22);
+    this.undoStack = [];
+    this.redoStack = [];
+  }
+
+  idx(x, y, z) {
+    return (y * this.size + z) * this.size + x;
+  }
+
+  inBounds(x, y, z) {
+    const N = this.size;
+    return x >= 0 && x < N && y >= 0 && y < N && z >= 0 && z < N;
+  }
+
+  saveSnapshot() {
+    if (this.undoStack.length >= 8) this.undoStack.shift();
+    this.undoStack.push({
+      type: new Uint8Array(this.type),
+      temp: new Float32Array(this.temp),
+      life: new Uint16Array(this.life)
+    });
+    this.redoStack = [];
+  }
+
+  undo() {
+    if (this.undoStack.length === 0) return false;
+    this.redoStack.push({
+      type: new Uint8Array(this.type),
+      temp: new Float32Array(this.temp),
+      life: new Uint16Array(this.life)
+    });
+    const s = this.undoStack.pop();
+    this.type.set(s.type); this.temp.set(s.temp); this.life.set(s.life);
+    return true;
+  }
+
+  redo() {
+    if (this.redoStack.length === 0) return false;
+    this.undoStack.push({
+      type: new Uint8Array(this.type),
+      temp: new Float32Array(this.temp),
+      life: new Uint16Array(this.life)
+    });
+    const s = this.redoStack.pop();
+    this.type.set(s.type); this.temp.set(s.temp); this.life.set(s.life);
+    return true;
+  }
+
+  clear() {
+    this.saveSnapshot();
+    this.type.fill(0);
+    this.temp.fill(this.ambientTemp);
+    this.life.fill(0);
+  }
+
+  setVoxel(x, y, z, elId) {
+    if (!this.inBounds(x, y, z)) return false;
+    const i = this.idx(x, y, z);
+    if (this.type[i] === elId) return false;
+    this.type[i] = elId;
+    const def = EL_MAP[elId];
+    this.temp[i] = def ? def.temp : this.ambientTemp;
+    this.life[i] = elId === 5 ? (30 + Math.floor(Math.random() * 40)) :
+                   elId === 11 ? (100 + Math.floor(Math.random() * 100)) :
+                   elId === 20 ? 10 : 0;
+    return true;
+  }
+
+  swap(i1, i2) {
+    const tType = this.type[i1], tTemp = this.temp[i1], tLife = this.life[i1];
+    this.type[i1] = this.type[i2]; this.temp[i1] = this.temp[i2]; this.life[i1] = this.life[i2];
+    this.type[i2] = tType; this.temp[i2] = tTemp; this.life[i2] = tLife;
+    this.updated[i1] = 1;
+    this.updated[i2] = 1;
+  }
+
+  step(onReaction) {
+    this.updated.fill(0);
+    const N = this.size;
+    const g = this.gravityDir === 0 ? (Math.random() < 0.5 ? 1 : -1) : this.gravityDir;
+    const startY = g > 0 ? 0 : N - 1;
+    const endY = g > 0 ? N : -1;
+    const stepY = g > 0 ? 1 : -1;
+
+    let activeCount = 0;
+    let tempSum = 0;
+    const counts = new Uint32Array(25);
+    const dirs6 = [[1,0,0],[-1,0,0],[0,1,0],[0,-1,0],[0,0,1],[0,0,-1]];
+
+    for (let y = startY; y !== endY; y += stepY) {
+      const flipX = Math.random() < 0.5;
+      const flipZ = Math.random() < 0.5;
+      for (let zi = 0; zi < N; zi++) {
+        const z = flipZ ? zi : (N - 1 - zi);
+        for (let xi = 0; xi < N; xi++) {
+          const x = flipX ? xi : (N - 1 - xi);
+          const i = this.idx(x, y, z);
+          const id = this.type[i];
+          if (id === 0) continue;
+
+          activeCount++;
+          counts[id]++;
+          tempSum += this.temp[i];
+
+          if (this.updated[i]) continue;
+          this.updated[i] = 1;
+
+          const el = EL_MAP[id];
+          if (!el) continue;
+
+          // 1. Lifetime Decay
+          if (id === 5) {
+            if (this.life[i] <= 1 || Math.random() < 0.045) {
+              this.setVoxel(x, y, z, Math.random() < 0.14 ? 11 : 0);
+              continue;
+            }
+            this.life[i]--;
+          } else if (id === 11) {
+            if (this.life[i] <= 1 || y >= N - 2) {
+              if (Math.random() < 0.3) {
+                this.setVoxel(x, y, z, 2);
+                onReaction(x, y, z, 2, 11);
+              } else {
+                this.setVoxel(x, y, z, 0);
+              }
+              continue;
+            }
+            this.life[i]--;
+          } else if (id === 20) {
+            if (this.life[i] <= 1) {
+              this.setVoxel(x, y, z, 0);
+              continue;
+            }
+            this.life[i]--;
+          }
+
+          // 2. 6-Neighbor 3D Chemical & Thermal Reactions
+          let transformed = false;
+          for (let d = 0; d < 6; d++) {
+            const nx = x + dirs6[d][0];
+            const ny = y + dirs6[d][1];
+            const nz = z + dirs6[d][2];
+            if (!this.inBounds(nx, ny, nz)) continue;
+            const ni = this.idx(nx, ny, nz);
+            const nid = this.type[ni];
+
+            const diff = (this.temp[ni] - this.temp[i]) * 0.06;
+            this.temp[i] += diff;
+            this.temp[ni] -= diff;
+
+            if (nid === 0) continue;
+
+            if ((id === 6 && nid === 2) || (id === 2 && nid === 6)) {
+              this.setVoxel(x, y, z, 12);
+              this.setVoxel(nx, ny, nz, 11);
+              onReaction(x, y, z, 12, 6);
+              transformed = true; break;
+            }
+            if (id === 2 && (nid === 5 || nid === 20)) {
+              this.setVoxel(x, y, z, 11);
+              onReaction(x, y, z, 11, 2);
+              transformed = true; break;
+            }
+            if (id === 1 && (nid === 6 || nid === 20 || this.temp[i] > 420)) {
+              this.setVoxel(x, y, z, 13);
+              onReaction(x, y, z, 13, 1);
+              transformed = true; break;
+            }
+            if (id === 8 && (nid === 2 || nid === 4)) {
+              this.setVoxel(x, y, z, 14);
+              if (nid === 2) this.setVoxel(nx, ny, nz, 14);
+              onReaction(x, y, z, 14, 8);
+              transformed = true; break;
+            }
+            if (id === 14 && nid === 2 && Math.random() < 0.16) {
+              this.setVoxel(nx, ny, nz, 14);
+              onReaction(nx, ny, nz, 14, 14);
+              if (Math.random() < 0.045 && this.inBounds(x, y + 1, z) && this.type[this.idx(x, y + 1, z)] === 0) {
+                this.setVoxel(x, y + 1, z, 16);
+                onReaction(x, y + 1, z, 16, 14);
+              }
+            }
+            if (id === 14 && (nid === 17 || nid === 21)) {
+              this.setVoxel(x, y, z, 15);
+              onReaction(x, y, z, 15, 14);
+              transformed = true; break;
+            }
+            if (id === 15 && (nid === 4 || nid === 9) && Math.random() < 0.06) {
+              this.setVoxel(nx, ny, nz, 15);
+              onReaction(nx, ny, nz, 15, 15);
+            }
+            if (id === 14 && nid === 6 && Math.random() < 0.25) {
+              this.setVoxel(x, y, z, 18);
+              onReaction(x, y, z, 18, 14);
+              transformed = true; break;
+            }
+            if (id === 2 && nid === 10 && Math.random() < 0.2) {
+              this.setVoxel(x, y, z, 17);
+              onReaction(x, y, z, 17, 2);
+              transformed = true; break;
+            }
+            if (id === 3 && nid === 20) {
+              this.setVoxel(x, y, z, 19);
+              onReaction(x, y, z, 19, 3);
+              transformed = true; break;
+            }
+            if (id === 19 && nid === 17 && Math.random() < 0.15) {
+              this.setVoxel(x, y, z, 21);
+              this.setVoxel(nx, ny, nz, 0);
+              onReaction(x, y, z, 21, 19);
+              transformed = true; break;
+            }
+            if (id === 19 && nid === 20) {
+              this.setVoxel(x, y, z, 22);
+              onReaction(x, y, z, 22, 19);
+              transformed = true; break;
+            }
+            if (id === 21 && nid === 20) {
+              this.setVoxel(x, y, z, 23);
+              onReaction(x, y, z, 23, 21);
+              transformed = true; break;
+            }
+            if (id === 11 && nid === 5 && Math.random() < 0.08) {
+              this.setVoxel(x, y, z, 20);
+              onReaction(x, y, z, 20, 11);
+              transformed = true; break;
+            }
+            if (id === 17 && (nid === 3 || nid === 9 || nid === 14) && Math.random() < 0.14) {
+              this.setVoxel(nx, ny, nz, 0);
+              if (Math.random() < 0.4) this.setVoxel(x, y, z, 0);
+              onReaction(nx, ny, nz, 17, nid);
+              transformed = true; break;
+            }
+            if (id === 7 && (nid === 5 || nid === 6 || this.temp[i] > 15)) {
+              this.setVoxel(x, y, z, 2);
+              onReaction(x, y, z, 2, 7);
+              transformed = true; break;
+            }
+            if ((id === 5 || id === 6 || id === 20) && EL_MAP[nid] && EL_MAP[nid].flam > 0) {
+              if (Math.random() < EL_MAP[nid].flam) {
+                if (nid === 10 || nid === 21 || nid === 23) {
+                  onReaction(nx, ny, nz, 5, nid, true);
+                } else {
+                  this.setVoxel(nx, ny, nz, Math.random() < 0.25 ? 24 : 5);
+                  onReaction(nx, ny, nz, 5, nid);
+                }
+              }
+            }
+            if (id === 23 && nid !== 23) {
+              onReaction(x, y, z, 23, nid, true);
+              transformed = true; break;
+            }
+          }
+
+          if (transformed) continue;
+
+          // 3. 3D Movement Rules
+          if (el.type === 'solid') continue;
+
+          if (el.type === 'creature') {
+            const dx = Math.floor(Math.random() * 3) - 1;
+            const dy = Math.floor(Math.random() * 3) - 1;
+            const dz = Math.floor(Math.random() * 3) - 1;
+            const nx = x + dx, ny = y + dy, nz = z + dz;
+            if (this.inBounds(nx, ny, nz) && this.type[this.idx(nx, ny, nz)] === 0) {
+              this.swap(i, this.idx(nx, ny, nz));
+            }
+            continue;
+          }
+
+          const moveDir = (el.type === 'gas' || el.type === 'energy') ? g : -g;
+          const ny = y + moveDir;
+
+          if (el.type === 'powder') {
+            if (this.inBounds(x, ny, z)) {
+              const bIdx = this.idx(x, ny, z);
+              const bEl = EL_MAP[this.type[bIdx]];
+              if (this.type[bIdx] === 0 || (bEl && (bEl.type === 'liquid' || bEl.type === 'gas') && bEl.density < el.density)) {
+                this.swap(i, bIdx);
+                continue;
+              }
+            }
+            const offsets = [[1,0],[-1,0],[0,1],[0,-1],[1,1],[-1,-1],[1,-1],[-1,1]];
+            const start = Math.floor(Math.random() * 8);
+            for (let k = 0; k < 8; k++) {
+              const [ox, oz] = offsets[(start + k) % 8];
+              if (this.inBounds(x + ox, ny, z + oz)) {
+                const dIdx = this.idx(x + ox, ny, z + oz);
+                const dEl = EL_MAP[this.type[dIdx]];
+                if (this.type[dIdx] === 0 || (dEl && dEl.type === 'liquid')) {
+                  this.swap(i, dIdx);
+                  break;
+                }
+              }
+            }
+          } else if (el.type === 'liquid') {
+            if (this.inBounds(x, ny, z)) {
+              const bIdx = this.idx(x, ny, z);
+              const bEl = EL_MAP[this.type[bIdx]];
+              if (this.type[bIdx] === 0 || (bEl && bEl.type === 'liquid' && bEl.density < el.density)) {
+                this.swap(i, bIdx);
+                continue;
+              }
+            }
+            const hDirs = [[1,0],[-1,0],[0,1],[0,-1]];
+            const start = Math.floor(Math.random() * 4);
+            for (let k = 0; k < 4; k++) {
+              const [ox, oz] = hDirs[(start + k) % 4];
+              if (this.inBounds(x + ox, ny, z + oz) && this.type[this.idx(x + ox, ny, z + oz)] === 0) {
+                this.swap(i, this.idx(x + ox, ny, z + oz));
+                break;
+              }
+              if (this.inBounds(x + ox, y, z + oz) && this.type[this.idx(x + ox, y, z + oz)] === 0) {
+                this.swap(i, this.idx(x + ox, y, z + oz));
+                break;
+              }
+            }
+          } else if (el.type === 'gas' || el.type === 'energy') {
+            const dx = Math.floor(Math.random() * 3) - 1;
+            const dz = Math.floor(Math.random() * 3) - 1;
+            if (this.inBounds(x + dx, ny, z + dz) && this.type[this.idx(x + dx, ny, z + dz)] === 0) {
+              this.swap(i, this.idx(x + dx, ny, z + dz));
+            } else if (this.inBounds(x + dx, y, z + dz) && this.type[this.idx(x + dx, y, z + dz)] === 0) {
+              this.swap(i, this.idx(x + dx, y, z + dz));
+            }
+          }
+        }
+      }
+    }
+
+    return {
+      activeCount,
+      avgTemp: activeCount > 0 ? Math.round(tempSum / activeCount) : this.ambientTemp,
+      counts
+    };
+  }
+
+  explode3D(cx, cy, cz, radius) {
+    const r2 = radius * radius;
+    for (let dy = -radius; dy <= radius; dy++) {
+      for (let dz = -radius; dz <= radius; dz++) {
+        for (let dx = -radius; dx <= radius; dx++) {
+          if (dx * dx + dy * dy + dz * dz <= r2) {
+            const nx = cx + dx, ny = cy + dy, nz = cz + dz;
+            if (this.inBounds(nx, ny, nz)) {
+              const id = this.type[this.idx(nx, ny, nz)];
+              if (id !== 12 && id !== 3) {
+                this.setVoxel(nx, ny, nz, Math.random() < 0.4 ? 5 : 0);
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
+
+/**
+ * ============================================================================
+ * 7. ZERO-DEPENDENCY WEBGL 2.0 INSTANCED VOXEL RENDERER & RAYCASTER
+ * ============================================================================
+ */
+class WebGLVoxelRenderer {
+  constructor(canvas) {
+    this.canvas = canvas;
+    this.gl = canvas.getContext('webgl2', { antialias: true, alpha: false });
+    if (!this.gl) {
+      alert('Your browser does not support WebGL 2.0.');
+      return;
+    }
+
+    this.yaw = 0.68;
+    this.pitch = 0.52;
+    this.distance = 82;
+    this.autoRotate = false;
+
+    this.initShaders();
+    this.initCubeGeometry();
+    this.initWireframeBox();
+  }
+
+  initShaders() {
+    const gl = this.gl;
+
+    const vsVoxel = `#version 300 es
+      layout(location = 0) in vec3 aPos;
+      layout(location = 1) in vec3 aNormal;
+      layout(location = 2) in vec3 iOffset;
+      layout(location = 3) in vec4 iColorGlow;
+
+      uniform mat4 uViewProj;
+      uniform float uTime;
+
+      out vec3 vNormal;
+      out vec4 vColorGlow;
+
+      void main() {
+        float scale = 0.96;
+        if (iColorGlow.a > 0.5) {
+          scale = 0.90 + 0.08 * sin(uTime * 6.0 + iOffset.x + iOffset.y + iOffset.z);
+        }
+        vec3 worldPos = aPos * scale + iOffset;
+        vNormal = aNormal;
+        vColorGlow = iColorGlow;
+        gl_Position = uViewProj * vec4(worldPos, 1.0);
+      }
+    `;
+
+    const fsVoxel = `#version 300 es
+      precision highp float;
+      in vec3 vNormal;
+      in vec4 vColorGlow;
+
+      uniform vec3 uLightDir;
+
+      out vec4 fragColor;
+
+      void main() {
+        vec3 n = normalize(vNormal);
+        float diff = max(dot(n, normalize(uLightDir)), 0.0);
+        float faceShade = 0.65 + 0.35 * diff;
+        if (abs(n.x) > 0.5) faceShade *= 0.92;
+        if (abs(n.z) > 0.5) faceShade *= 0.85;
+
+        vec3 baseCol = vColorGlow.rgb * faceShade;
+        vec3 emissive = vColorGlow.rgb * vColorGlow.a * 0.45;
+        fragColor = vec4(baseCol + emissive, 1.0);
+      }
+    `;
+    this.voxelProg = this.createProgram(vsVoxel, fsVoxel);
+
+    const vsLine = `#version 300 es
+      layout(location = 0) in vec3 aPos;
+      uniform mat4 uViewProj;
+      uniform vec3 uOffset;
+      uniform vec3 uScale;
+      void main() {
+        gl_Position = uViewProj * vec4(aPos * uScale + uOffset, 1.0);
+      }
+    `;
+    const fsLine = `#version 300 es
+      precision highp float;
+      uniform vec4 uColor;
+      out vec4 fragColor;
+      void main() {
+        fragColor = uColor;
+      }
+    `;
+    this.lineProg = this.createProgram(vsLine, fsLine);
+  }
+
+  createProgram(vsSrc, fsSrc) {
+    const gl = this.gl;
+    const vs = gl.createShader(gl.VERTEX_SHADER);
+    gl.shaderSource(vs, vsSrc); gl.compileShader(vs);
+    const fs = gl.createShader(gl.FRAGMENT_SHADER);
+    gl.shaderSource(fs, fsSrc); gl.compileShader(fs);
+    const prog = gl.createProgram();
+    gl.attachShader(prog, vs); gl.attachShader(prog, fs);
+    gl.linkProgram(prog);
+    return prog;
+  }
+
+  initCubeGeometry() {
+    const gl = this.gl;
+    const v = [
+      -0.5,-0.5, 0.5,  0,0,1,   0.5,-0.5, 0.5,  0,0,1,   0.5, 0.5, 0.5,  0,0,1,
+      -0.5,-0.5, 0.5,  0,0,1,   0.5, 0.5, 0.5,  0,0,1,  -0.5, 0.5, 0.5,  0,0,1,
+       0.5,-0.5,-0.5,  0,0,-1, -0.5,-0.5,-0.5,  0,0,-1, -0.5, 0.5,-0.5,  0,0,-1,
+       0.5,-0.5,-0.5,  0,0,-1, -0.5, 0.5,-0.5,  0,0,-1,  0.5, 0.5,-0.5,  0,0,-1,
+      -0.5, 0.5, 0.5,  0,1,0,   0.5, 0.5, 0.5,  0,1,0,   0.5, 0.5,-0.5,  0,1,0,
+      -0.5, 0.5, 0.5,  0,1,0,   0.5, 0.5,-0.5,  0,1,0,  -0.5, 0.5,-0.5,  0,1,0,
+      -0.5,-0.5,-0.5,  0,-1,0,  0.5,-0.5,-0.5,  0,-1,0,  0.5,-0.5, 0.5,  0,-1,0,
+      -0.5,-0.5,-0.5,  0,-1,0,  0.5,-0.5, 0.5,  0,-1,0, -0.5,-0.5, 0.5,  0,-1,0,
+       0.5,-0.5, 0.5,  1,0,0,   0.5,-0.5,-0.5,  1,0,0,   0.5, 0.5,-0.5,  1,0,0,
+       0.5,-0.5, 0.5,  1,0,0,   0.5, 0.5,-0.5,  1,0,0,   0.5, 0.5, 0.5,  1,0,0,
+      -0.5,-0.5,-0.5, -1,0,0,  -0.5,-0.5, 0.5, -1,0,0,  -0.5, 0.5, 0.5, -1,0,0,
+      -0.5,-0.5,-0.5, -1,0,0,  -0.5, 0.5, 0.5, -1,0,0,  -0.5, 0.5,-0.5, -1,0,0
+    ];
+
+    this.vao = gl.createVertexArray();
+    gl.bindVertexArray(this.vao);
+
+    const vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(v), gl.STATIC_DRAW);
+
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 24, 0);
+    gl.enableVertexAttribArray(1);
+    gl.vertexAttribPointer(1, 3, gl.FLOAT, false, 24, 12);
+
+    this.maxInstances = 64 * 64 * 64;
+    this.offsetData = new Float32Array(this.maxInstances * 3);
+    this.colorData = new Float32Array(this.maxInstances * 4);
+
+    this.offsetVbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.offsetVbo);
+    gl.bufferData(gl.ARRAY_BUFFER, this.offsetData.byteLength, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(2);
+    gl.vertexAttribPointer(2, 3, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(2, 1);
+
+    this.colorVbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, this.colorVbo);
+    gl.bufferData(gl.ARRAY_BUFFER, this.colorData.byteLength, gl.DYNAMIC_DRAW);
+    gl.enableVertexAttribArray(3);
+    gl.vertexAttribPointer(3, 4, gl.FLOAT, false, 0, 0);
+    gl.vertexAttribDivisor(3, 1);
+
+    gl.bindVertexArray(null);
+  }
+
+  initWireframeBox() {
+    const gl = this.gl;
+    const lines = [
+      0,0,0, 1,0,0,  1,0,0, 1,0,1,  1,0,1, 0,0,1,  0,0,1, 0,0,0,
+      0,1,0, 1,1,0,  1,1,0, 1,1,1,  1,1,1, 0,1,1,  0,1,1, 0,1,0,
+      0,0,0, 0,1,0,  1,0,0, 1,1,0,  1,0,1, 1,1,1,  0,0,1, 0,1,1
+    ];
+    this.boxVao = gl.createVertexArray();
+    gl.bindVertexArray(this.boxVao);
+    const vbo = gl.createBuffer();
+    gl.bindBuffer(gl.ARRAY_BUFFER, vbo);
+    gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(lines), gl.STATIC_DRAW);
+    gl.enableVertexAttribArray(0);
+    gl.vertexAttribPointer(0, 3, gl.FLOAT, false, 0, 0);
+    gl.bindVertexArray(null);
+  }
+
+  getMatrices(N) {
+    const aspect = this.canvas.width / Math.max(1, this.canvas.height);
+    const fov = (45 * Math.PI) / 180;
+    const near = 0.5, far = 400.0;
+    const f = 1.0 / Math.tan(fov / 2);
+
+    const proj = new Float32Array([
+      f / aspect, 0, 0, 0,
+      0, f, 0, 0,
+      0, 0, (far + near) / (near - far), -1,
+      0, 0, (2 * far * near) / (near - far), 0
+    ]);
+
+    const half = N * 0.5;
+    const cx = half + Math.sin(this.yaw) * Math.cos(this.pitch) * this.distance;
+    const cy = half * 0.85 + Math.sin(this.pitch) * this.distance;
+    const cz = half + Math.cos(this.yaw) * Math.cos(this.pitch) * this.distance;
+    const eye = [cx, cy, cz];
+    const center = [half, half * 0.75, half];
+    const up = [0, 1, 0];
+
+    const zAxis = this.normalize([eye[0] - center[0], eye[1] - center[1], eye[2] - center[2]]);
+    const xAxis = this.normalize(this.cross(up, zAxis));
+    const yAxis = this.cross(zAxis, xAxis);
+
+    const view = new Float32Array([
+      xAxis[0], yAxis[0], zAxis[0], 0,
+      xAxis[1], yAxis[1], zAxis[1], 0,
+      xAxis[2], yAxis[2], zAxis[2], 0,
+      -this.dot(xAxis, eye), -this.dot(yAxis, eye), -this.dot(zAxis, eye), 1
+    ]);
+
+    const viewProj = this.multiplyMat4(proj, view);
+    return { viewProj, eye };
+  }
+
+  raycastVoxel(clientX, clientY, sim, buildPlaneY) {
+    const rect = this.canvas.getBoundingClientRect();
+    const ndcX = ((clientX - rect.left) / rect.width) * 2 - 1;
+    const ndcY = 1 - ((clientY - rect.top) / rect.height) * 2;
+
+    const N = sim.size;
+    const { viewProj, eye } = this.getMatrices(N);
+    const invVP = this.invertMat4(viewProj);
+    if (!invVP) return null;
+
+    const nearPt = this.transformPoint(invVP, [ndcX, ndcY, -1]);
+    const farPt = this.transformPoint(invVP, [ndcX, ndcY, 1]);
+    const dir = this.normalize([farPt[0] - nearPt[0], farPt[1] - nearPt[1], farPt[2] - nearPt[2]]);
+
+    let lastEmpty = null;
+    for (let t = 1; t < 160; t += 0.45) {
+      const px = eye[0] + dir[0] * t;
+      const py = eye[1] + dir[1] * t;
+      const pz = eye[2] + dir[2] * t;
+      const gx = Math.floor(px);
+      const gy = Math.floor(py);
+      const gz = Math.floor(pz);
+
+      if (sim.inBounds(gx, gy, gz)) {
+        const id = sim.type[sim.idx(gx, gy, gz)];
+        if (id !== 0) {
+          return { hit: [gx, gy, gz], place: lastEmpty || [gx, gy, gz] };
+        }
+        lastEmpty = [gx, gy, gz];
+      }
+    }
+
+    if (Math.abs(dir[1]) > 0.001) {
+      const tPlane = (buildPlaneY - eye[1]) / dir[1];
+      if (tPlane > 0) {
+        const gx = Math.floor(eye[0] + dir[0] * tPlane);
+        const gz = Math.floor(eye[2] + dir[2] * tPlane);
+        const gy = Math.max(0, Math.min(N - 1, buildPlaneY));
+        if (gx >= 0 && gx < N && gz >= 0 && gz < N) {
+          return { hit: [gx, gy, gz], place: [gx, gy, gz] };
+        }
+      }
+    }
+    return null;
+  }
+
+  render(sim, sliceY, cursorPos, brushSize, shapeMode, themeObj, shakeOffset) {
+    const gl = this.gl;
+    if (!gl) return;
+
+    const N = sim.size;
+    const { type } = sim;
+    let count = 0;
+
+    for (let y = 0; y < Math.min(N, sliceY); y++) {
+      for (let z = 0; z < N; z++) {
+        for (let x = 0; x < N; x++) {
+          const i = (y * N + z) * N + x;
+          const id = type[i];
+          if (id === 0) continue;
+
+          if (x > 0 && x < N - 1 && y > 0 && y < sliceY - 1 && z > 0 && z < N - 1) {
+            if (type[i + 1] !== 0 && type[i - 1] !== 0 &&
+                type[i + N] !== 0 && type[i - N] !== 0 &&
+                type[i + N * N] !== 0 && type[i - N * N] !== 0) {
+              continue;
+            }
+          }
+
+          const el = EL_MAP[id];
+          const o3 = count * 3;
+          const c4 = count * 4;
+          this.offsetData[o3] = x + 0.5;
+          this.offsetData[o3 + 1] = y + 0.5;
+          this.offsetData[o3 + 2] = z + 0.5;
+
+          this.colorData[c4] = el.color[0];
+          this.colorData[c4 + 1] = el.color[1];
+          this.colorData[c4 + 2] = el.color[2];
+          this.colorData[c4 + 3] = el.glow || 0.0;
+          count++;
+        }
+      }
+    }
+
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    gl.clearColor(themeObj.clearColor[0], themeObj.clearColor[1], themeObj.clearColor[2], 1.0);
+    gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
+    gl.enable(gl.DEPTH_TEST);
+    gl.enable(gl.BLEND);
+    gl.blendFunc(gl.SRC_ALPHA, gl.ONE_MINUS_SRC_ALPHA);
+
+    const { viewProj } = this.getMatrices(N);
+    viewProj[12] += shakeOffset[0];
+    viewProj[13] += shakeOffset[1];
+
+    if (count > 0) {
+      gl.useProgram(this.voxelProg);
+      gl.bindVertexArray(this.vao);
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.offsetVbo);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.offsetData.subarray(0, count * 3));
+
+      gl.bindBuffer(gl.ARRAY_BUFFER, this.colorVbo);
+      gl.bufferSubData(gl.ARRAY_BUFFER, 0, this.colorData.subarray(0, count * 4));
+
+      gl.uniformMatrix4fv(gl.getUniformLocation(this.voxelProg, 'uViewProj'), false, viewProj);
+      gl.uniform1f(gl.getUniformLocation(this.voxelProg, 'uTime'), performance.now() * 0.001);
+      gl.uniform3f(gl.getUniformLocation(this.voxelProg, 'uLightDir'), 0.6, 1.0, 0.45);
+
+      gl.drawArraysInstanced(gl.TRIANGLES, 0, 36, count);
+    }
+
+    gl.useProgram(this.lineProg);
+    gl.bindVertexArray(this.boxVao);
+    gl.uniformMatrix4fv(gl.getUniformLocation(this.lineProg, 'uViewProj'), false, viewProj);
+
+    // Outer World Bounds
+    gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uOffset'), 0, 0, 0);
+    gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uScale'), N, N, N);
+    gl.uniform4fv(gl.getUniformLocation(this.lineProg, 'uColor'), themeObj.boxColor);
+    gl.drawArrays(gl.LINES, 0, 24);
+
+    // 3D Shape / Brush Bounding Box Preview
+    if (cursorPos) {
+      const r = brushSize - 1;
+      const span = r * 2 + 1;
+      let ox = cursorPos[0] - r;
+      let oy = cursorPos[1] - r;
+      let oz = cursorPos[2] - r;
+      let sx = span, sy = span, sz = span;
+
+      // For Pyramid & Cylinder, anchor bottom at cursor Y so structures sit cleanly on surfaces
+      if (shapeMode === 'stamp_pyramid' || shapeMode === 'stamp_cylinder') {
+        oy = cursorPos[1];
+        sy = Math.max(2, brushSize * 2 - 1);
+      } else if (shapeMode === 'stamp_torus') {
+        oy = cursorPos[1];
+        sy = 3;
+      }
+
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uOffset'), ox, oy, oz);
+      gl.uniform3f(gl.getUniformLocation(this.lineProg, 'uScale'), sx, sy, sz);
+      const isStamp = shapeMode.startsWith('stamp_');
+      gl.uniform4f(
+        gl.getUniformLocation(this.lineProg, 'uColor'),
+        isStamp ? 0.0 : 1.0,
+        isStamp ? 0.94 : 0.85,
+        isStamp ? 1.0 : 0.25,
+        0.92
+      );
+      gl.drawArrays(gl.LINES, 0, 24);
+    }
+
+    gl.bindVertexArray(null);
+  }
+
+  normalize(v) {
+    const len = Math.hypot(v[0], v[1], v[2]) || 1;
+    return [v[0] / len, v[1] / len, v[2] / len];
+  }
+  cross(a, b) {
+    return [a[1]*b[2] - a[2]*b[1], a[2]*b[0] - a[0]*b[2], a[0]*b[1] - a[1]*b[0]];
+  }
+  dot(a, b) { return a[0]*b[0] + a[1]*b[1] + a[2]*b[2]; }
+  multiplyMat4(a, b) {
+    const out = new Float32Array(16);
+    for (let c = 0; c < 4; c++) {
+      for (let r = 0; r < 4; r++) {
+        out[c*4 + r] = a[0*4 + r]*b[c*4 + 0] + a[1*4 + r]*b[c*4 + 1] + a[2*4 + r]*b[c*4 + 2] + a[3*4 + r]*b[c*4 + 3];
+      }
+    }
+    return out;
+  }
+  invertMat4(m) {
+    const inv = new Float32Array(16);
+    inv[0] = m[5]*m[10]*m[15] - m[5]*m[11]*m[14] - m[9]*m[6]*m[15] + m[9]*m[7]*m[14] + m[13]*m[6]*m[11] - m[13]*m[7]*m[10];
+    inv[4] = -m[4]*m[10]*m[15] + m[4]*m[11]*m[14] + m[8]*m[6]*m[15] - m[8]*m[7]*m[14] - m[12]*m[6]*m[11] + m[12]*m[7]*m[10];
+    inv[8] = m[4]*m[9]*m[15] - m[4]*m[11]*m[13] - m[8]*m[5]*m[15] + m[8]*m[7]*m[13] + m[12]*m[5]*m[11] - m[12]*m[7]*m[9];
+    inv[12] = -m[4]*m[9]*m[14] + m[4]*m[10]*m[13] + m[8]*m[5]*m[14] - m[8]*m[6]*m[13] - m[12]*m[5]*m[10] + m[12]*m[6]*m[9];
+    inv[1] = -m[1]*m[10]*m[15] + m[1]*m[11]*m[14] + m[9]*m[2]*m[15] - m[9]*m[3]*m[14] - m[13]*m[2]*m[11] + m[13]*m[3]*m[10];
+    inv[5] = m[0]*m[10]*m[15] - m[0]*m[11]*m[14] - m[8]*m[2]*m[15] + m[8]*m[3]*m[14] + m[12]*m[2]*m[11] - m[12]*m[3]*m[10];
+    inv[9] = -m[0]*m[9]*m[15] + m[0]*m[11]*m[13] + m[8]*m[1]*m[15] - m[8]*m[3]*m[13] - m[12]*m[1]*m[11] + m[12]*m[3]*m[9];
+    inv[13] = m[0]*m[9]*m[14] - m[0]*m[10]*m[13] - m[8]*m[1]*m[14] + m[8]*m[2]*m[13] + m[12]*m[1]*m[10] - m[12]*m[2]*m[9];
+    inv[2] = m[1]*m[6]*m[15] - m[1]*m[7]*m[14] - m[5]*m[2]*m[15] + m[5]*m[3]*m[14] + m[13]*m[2]*m[7] - m[13]*m[3]*m[6];
+    inv[6] = -m[0]*m[6]*m[15] + m[0]*m[7]*m[14] + m[4]*m[2]*m[15] - m[4]*m[3]*m[14] - m[12]*m[2]*m[7] + m[12]*m[3]*m[6];
+    inv[10] = m[0]*m[5]*m[15] - m[0]*m[7]*m[13] - m[4]*m[1]*m[15] + m[4]*m[3]*m[13] + m[12]*m[1]*m[7] - m[12]*m[3]*m[5];
+    inv[14] = -m[0]*m[5]*m[14] + m[0]*m[6]*m[13] + m[4]*m[1]*m[14] - m[4]*m[2]*m[13] - m[12]*m[1]*m[6] + m[12]*m[2]*m[5];
+    inv[3] = -m[1]*m[6]*m[11] + m[1]*m[7]*m[10] + m[5]*m[2]*m[11] - m[5]*m[3]*m[10] - m[9]*m[2]*m[7] + m[9]*m[3]*m[6];
+    inv[7] = m[0]*m[6]*m[11] - m[0]*m[7]*m[10] - m[4]*m[2]*m[11] + m[4]*m[3]*m[10] + m[8]*m[2]*m[7] - m[8]*m[3]*m[6];
+    inv[11] = -m[0]*m[5]*m[11] + m[0]*m[7]*m[9] + m[4]*m[1]*m[11] - m[4]*m[3]*m[9] - m[8]*m[1]*m[7] + m[8]*m[3]*m[5];
+    inv[15] = m[0]*m[5]*m[10] - m[0]*m[6]*m[9] - m[4]*m[1]*m[10] + m[4]*m[2]*m[9] + m[8]*m[1]*m[6] - m[8]*m[2]*m[5];
+    let det = m[0]*inv[0] + m[1]*inv[4] + m[2]*inv[8] + m[3]*inv[12];
+    if (!det) return null;
+    det = 1.0 / det;
+    for (let i = 0; i < 16; i++) inv[i] *= det;
+    return inv;
+  }
+  transformPoint(m, p) {
+    const w = m[3]*p[0] + m[7]*p[1] + m[11]*p[2] + m[15] || 1;
+    return [
+      (m[0]*p[0] + m[4]*p[1] + m[8]*p[2] + m[12]) / w,
+      (m[1]*p[0] + m[5]*p[1] + m[9]*p[2] + m[13]) / w,
+      (m[2]*p[0] + m[6]*p[1] + m[10]*p[2] + m[14]) / w
+    ];
+  }
+}
+
+/**
+ * ============================================================================
+ * 8. MAIN 3D GAME CONTROLLER WITH 3D GEOMETRIC SHAPE STAMPS
+ * ============================================================================
+ */
+class Aetheria3DGame {
+  constructor() {
+    this.canvas = document.getElementById('gl-canvas');
+    this.saveMgr = new SaveManager();
+    this.audio = new AudioEngine();
+    this.renderer = new WebGLVoxelRenderer(this.canvas);
+    this.sim = new VoxelSimulation3D(this.saveMgr.data.gridSize);
+
+    this.state = 'PLAYING';
+    this.mode = 'sandbox';
+    this.activeTrial = null;
+    this.trialTimeLeft = 0;
+
+    this.selectedElement = 1;
+    this.selectedTool = 'brush';
+    this.selectedCat = 'all';
+    this.shapeMode = 'brush_sphere'; // brush_sphere, stamp_cube, stamp_hollow_box, stamp_sphere, stamp_hollow_sphere, stamp_pyramid, stamp_cylinder, stamp_torus
+    this.brushSize = 2;
+    this.buildPlaneY = 18;
+    this.sliceY = this.sim.size;
+    this.simSpeed = 1;
+    this.speedAccumulator = 0;
+
+    this.pointer = { down: false, button: 0, lastX: 0, lastY: 0, cursor3D: null };
+    this.combo = 0;
+    this.comboTimer = 0;
+    this.overdrive = false;
+    this.critical = false;
+    this.displayAether = this.saveMgr.data.aether;
+    this.shakeTime = 0;
+    this.shakeIntensity = 0;
+
+    this.fps = 60;
+    this.frameCount = 0;
+    this.fpsTimer = 0;
+
+    this.handleResize();
+    this.applyTheme(this.saveMgr.data.theme);
+    this.applyLanguage(this.saveMgr.data.lang);
+    this.renderElementStrip();
+    this.bindEvents();
+    this.loadPresetTerrain('oasis');
+
+    this.lastTime = performance.now();
+    requestAnimationFrame(t => this.loop(t));
+  }
+
+  handleResize() {
+    this.canvas.width = window.innerWidth;
+    this.canvas.height = window.innerHeight;
+  }
+
+  t(key) {
+    const dict = I18N_DICT[this.saveMgr.data.lang] || I18N_DICT['zh-TW'];
+    return dict[key] || key;
+  }
+
+  applyLanguage(lang) {
+    this.saveMgr.data.lang = lang;
+    this.saveMgr.save();
+    document.querySelectorAll('[data-i18n]').forEach(el => {
+      const k = el.getAttribute('data-i18n');
+      if (k) el.textContent = this.t(k);
+    });
+    this.renderElementStrip();
+    this.updateTrialBanner();
+  }
+
+  applyTheme(themeKey) {
+    const th = THEMES[themeKey] || THEMES.neon;
+    this.saveMgr.data.theme = themeKey;
+    this.saveMgr.save();
+    const r = document.documentElement.style;
+    r.setProperty('--bg-canvas', th.bgCanvas);
+    r.setProperty('--bg-hud', th.bgHud);
+    r.setProperty('--bg-panel', th.bgPanel);
+    r.setProperty('--text-main', th.textMain);
+    r.setProperty('--text-muted', th.textMuted);
+    r.setProperty('--accent-primary', th.accentPrimary);
+    r.setProperty('--accent-secondary', th.accentSecondary);
+  }
+
+  showToast(msg) {
+    const container = document.getElementById('toast-container');
+    const div = document.createElement('div');
+    div.className = 'toast';
+    div.textContent = msg;
+    container.appendChild(div);
+    setTimeout(() => {
+      div.style.opacity = '0';
+      div.style.transform = 'translateX(20px)';
+      div.style.transition = 'all 0.3s ease';
+      setTimeout(() => div.remove(), 300);
+    }, 3200);
+  }
+
+  unlockElement(elId) {
+    if (this.saveMgr.data.discovered.includes(elId)) return;
+    this.saveMgr.data.discovered.push(elId);
+    this.saveMgr.data.aether += 50;
+    this.saveMgr.save();
+    this.audio.playDiscovery();
+    const el = EL_MAP[elId];
+    this.showToast(this.t('new_discovery') + this.t('el_' + el.key) + ' (+50 ✧)');
+    this.renderElementStrip();
+    this.checkAchievements();
+  }
+
+  checkAchievements() {
+    const s = { ...this.saveMgr.data.stats, discovered: this.saveMgr.data.discovered };
+    let updated = false;
+    for (const ach of ACHIEVEMENTS_DEF) {
+      if (!this.saveMgr.data.achievements.includes(ach.id) && ach.cond(s)) {
+        this.saveMgr.data.achievements.push(ach.id);
+        this.saveMgr.data.aether += 100;
+        updated = true;
+        this.audio.playDiscovery();
+        this.showToast(`${ach.icon} ${this.t('ach_unlocked')}${this.t('ach_' + ach.id)}`);
+      }
+    }
+    if (updated) this.saveMgr.save();
+  }
+
+  renderElementStrip() {
+    const strip = document.getElementById('element-strip');
+    strip.innerHTML = '';
+    const cb = this.saveMgr.data.colorblind;
+    ELEMENTS.forEach(el => {
+      if (this.selectedCat !== 'all' && el.cat !== this.selectedCat) return;
+      const unlocked = this.saveMgr.data.discovered.includes(el.id);
+      const btn = document.createElement('button');
+      btn.className = 'el-btn' + (this.selectedElement === el.id ? ' active' : '') + (!unlocked ? ' locked' : '');
+      const label = unlocked ? this.t('el_' + el.key) : '???';
+      btn.innerHTML = `<span class="el-swatch" style="background:${unlocked ? el.hex : '#334155'}"></span>` +
+                      (cb && unlocked ? `<span class="cb-symbol">[${el.sym}]</span>` : '') +
+                      `<span>${label}</span>`;
+      btn.onmouseenter = () => this.audio.playHover();
+      btn.onclick = () => {
+        if (!unlocked) { this.showToast(`🔒 ${el.recipeHint}`); return; }
+        this.audio.playClick();
+        this.selectedElement = el.id;
+        this.setTool('brush');
+        this.renderElementStrip();
+      };
+      strip.appendChild(btn);
+    });
+    document.getElementById('hud-codex').textContent = `${this.saveMgr.data.discovered.length}/24`;
+    document.getElementById('hud-ach').textContent = `${this.saveMgr.data.achievements.length}/16`;
+  }
+
+  setTool(tool) {
+    this.selectedTool = tool;
+    document.querySelectorAll('#tools-dock .tool-btn[data-tool]').forEach(b => {
+      b.classList.toggle('active', b.getAttribute('data-tool') === tool);
+    });
+    this.canvas.style.cursor = tool === 'orbit' ? 'grab' : 'crosshair';
+  }
+
+  /**
+   * Place 3D Basic Geometric Shapes (Cube, Hollow Box, Sphere, Hollow Sphere, Pyramid, Cylinder, Torus)
+   */
+  stamp3DShape(pos) {
+    if (!pos) return;
+    const [cx, cy, cz] = pos;
+    const r = Math.max(1, this.brushSize - 1);
+    const elId = this.selectedElement;
+    let placed = 0;
+
+    const placeIfValid = (x, y, z) => {
+      if (!this.sim.inBounds(x, y, z)) return;
+      const idx = this.sim.idx(x, y, z);
+      if (this.sim.type[idx] === 0 || elId === 5 || elId === 20) {
+        if (this.sim.setVoxel(x, y, z, elId)) placed++;
+      }
+    };
+
+    if (this.shapeMode === 'stamp_cube') {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dz = -r; dz <= r; dz++) {
+          for (let dx = -r; dx <= r; dx++) {
+            placeIfValid(cx + dx, cy + dy, cz + dz);
+          }
+        }
+      }
+    } else if (this.shapeMode === 'stamp_hollow_box') {
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dz = -r; dz <= r; dz++) {
+          for (let dx = -r; dx <= r; dx++) {
+            if (Math.abs(dx) === r || Math.abs(dy) === r || Math.abs(dz) === r) {
+              placeIfValid(cx + dx, cy + dy, cz + dz);
+            }
+          }
+        }
+      }
+    } else if (this.shapeMode === 'stamp_sphere') {
+      const r2 = r * r + 0.4;
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dz = -r; dz <= r; dz++) {
+          for (let dx = -r; dx <= r; dx++) {
+            if (dx * dx + dy * dy + dz * dz <= r2) {
+              placeIfValid(cx + dx, cy + dy, cz + dz);
+            }
+          }
+        }
+      }
+    } else if (this.shapeMode === 'stamp_hollow_sphere') {
+      const outer2 = (r + 0.3) * (r + 0.3);
+      const inner2 = Math.max(0, (r - 1.1) * (r - 1.1));
+      for (let dy = -r; dy <= r; dy++) {
+        for (let dz = -r; dz <= r; dz++) {
+          for (let dx = -r; dx <= r; dx++) {
+            const d2 = dx * dx + dy * dy + dz * dz;
+            if (d2 <= outer2 && d2 >= inner2) {
+              placeIfValid(cx + dx, cy + dy, cz + dz);
+            }
+          }
+        }
+      }
+    } else if (this.shapeMode === 'stamp_pyramid') {
+      const height = Math.max(2, this.brushSize * 2 - 1);
+      for (let h = 0; h < height; h++) {
+        const layerR = Math.max(0, r - Math.floor(h * 0.55));
+        for (let dz = -layerR; dz <= layerR; dz++) {
+          for (let dx = -layerR; dx <= layerR; dx++) {
+            placeIfValid(cx + dx, cy + h, cz + dz);
+          }
+        }
+      }
+    } else if (this.shapeMode === 'stamp_cylinder') {
+      const height = Math.max(2, this.brushSize * 2 - 1);
+      const r2 = r * r + 0.4;
+      for (let h = 0; h < height; h++) {
+        for (let dz = -r; dz <= r; dz++) {
+          for (let dx = -r; dx <= r; dx++) {
+            if (dx * dx + dz * dz <= r2) {
+              placeIfValid(cx + dx, cy + h, cz + dz);
+            }
+          }
+        }
+      }
+    } else if (this.shapeMode === 'stamp_torus') {
+      const majorR = Math.max(2, r);
+      const minorR = Math.max(1, Math.floor(r * 0.38));
+      for (let dy = -minorR; dy <= minorR; dy++) {
+        for (let dz = -(majorR + minorR); dz <= (majorR + minorR); dz++) {
+          for (let dx = -(majorR + minorR); dx <= (majorR + minorR); dx++) {
+            const distXZ = Math.hypot(dx, dz) - majorR;
+            if (distXZ * distXZ + dy * dy <= minorR * minorR + 0.3) {
+              placeIfValid(cx + dx, cy + dy + 1, cz + dz);
+            }
+          }
+        }
+      }
+    }
+
+    if (placed > 0) {
+      this.saveMgr.data.stats.totalCreated += placed;
+      this.audio.playStamp();
+    }
+  }
+
+  apply3DToolAt(pos, isDrag = false) {
+    if (!pos) return;
+    const [cx, cy, cz] = pos;
+    const tool = this.selectedTool;
+
+    if (tool === 'eyedropper') {
+      if (this.sim.inBounds(cx, cy, cz)) {
+        const id = this.sim.type[this.sim.idx(cx, cy, cz)];
+        if (id > 0 && this.saveMgr.data.discovered.includes(id)) {
+          this.selectedElement = id;
+          this.setTool('brush');
+          this.renderElementStrip();
+          this.audio.playClick();
+        }
+      }
+      return;
+    }
+
+    // If in Stamp Shape mode and tool is brush, place geometric shape once on click (avoid overlapping spam on drag)
+    if (tool === 'brush' && this.shapeMode.startsWith('stamp_')) {
+      if (!isDrag) this.stamp3DShape(pos);
+      return;
+    }
+
+    const r = this.brushSize - 1;
+    const r2 = r * r + 0.5;
+    let modified = 0;
+
+    for (let dy = -r; dy <= r; dy++) {
+      for (let dz = -r; dz <= r; dz++) {
+        for (let dx = -r; dx <= r; dx++) {
+          if (dx * dx + dy * dy + dz * dz > r2) continue;
+          const nx = cx + dx, ny = cy + dy, nz = cz + dz;
+          if (!this.sim.inBounds(nx, ny, nz)) continue;
+          const idx = this.sim.idx(nx, ny, nz);
+
+          if (tool === 'brush') {
+            if (this.sim.type[idx] === 0 || this.selectedElement === 5 || this.selectedElement === 20) {
+              if (this.sim.setVoxel(nx, ny, nz, this.selectedElement)) modified++;
+            }
+          } else if (tool === 'erase') {
+            if (this.sim.type[idx] !== 0) {
+              this.sim.setVoxel(nx, ny, nz, 0);
+              modified++;
+            }
+          } else if (tool === 'heat') {
+            this.sim.temp[idx] += 150;
+            if (this.sim.type[idx] === 0 && Math.random() < 0.08) this.sim.setVoxel(nx, ny, nz, 5);
+          } else if (tool === 'cool') {
+            this.sim.temp[idx] -= 150;
+            if (this.sim.type[idx] === 2) this.sim.setVoxel(nx, ny, nz, 7);
+          } else if (tool === 'vortex') {
+            if (this.sim.type[idx] !== 0 && (dx !== 0 || dy !== 0 || dz !== 0)) {
+              const tx = nx - Math.sign(dx), ty = ny - Math.sign(dy), tz = nz - Math.sign(dz);
+              if (this.sim.inBounds(tx, ty, tz) && this.sim.type[this.sim.idx(tx, ty, tz)] === 0) {
+                this.sim.swap(idx, this.sim.idx(tx, ty, tz));
+              }
+            }
+          }
+        }
+      }
+    }
+
+    if (modified > 0 && tool === 'brush') {
+      this.saveMgr.data.stats.totalCreated += modified;
+      this.audio.playBrush(this.selectedElement);
+    }
+  }
+
+  loadPresetTerrain(preset) {
+    this.sim.clear();
+    const N = this.sim.size;
+    const mid = Math.floor(N / 2);
+
+    if (preset === 'oasis') {
+      const maxR = Math.floor(N * 0.38);
+      for (let x = 0; x < N; x++) {
+        for (let z = 0; z < N; z++) {
+          const dist = Math.hypot(x - mid, z - mid);
+          if (dist < maxR) {
+            const depth = Math.floor((1 - dist / maxR) * 12) + 2;
+            const topY = 14;
+            for (let y = topY - depth; y <= topY; y++) {
+              this.sim.setVoxel(x, y, z, y < topY - 2 ? 3 : 4);
+            }
+            if (dist < maxR * 0.48) {
+              this.sim.setVoxel(x, topY, z, 2);
+              this.sim.setVoxel(x, topY + 1, z, 2);
+            }
+          }
+        }
+      }
+    } else if (preset === 'desert') {
+      for (let x = 4; x < N - 4; x++) {
+        for (let z = 4; z < N - 4; z++) {
+          const h = Math.floor(Math.sin(x * 0.25) * 3 + Math.cos(z * 0.25) * 3 + 10);
+          for (let y = 0; y < h; y++) this.sim.setVoxel(x, y, z, y < 3 ? 3 : 1);
+        }
+      }
+    } else if (preset === 'volcano') {
+      const maxR = Math.floor(N * 0.4);
+      for (let x = 0; x < N; x++) {
+        for (let z = 0; z < N; z++) {
+          const dist = Math.hypot(x - mid, z - mid);
+          if (dist < maxR) {
+            const h = Math.floor((1 - dist / maxR) * 20) + 2;
+            for (let y = 0; y < h; y++) {
+              if (dist < 5 && y > 4) this.sim.setVoxel(x, y, z, 6);
+              else this.sim.setVoxel(x, y, z, 3);
+            }
+          }
+        }
+      }
+    } else if (preset === 'forest') {
+      for (let x = 6; x < N - 6; x++) {
+        for (let z = 6; z < N - 6; z++) {
+          for (let y = 0; y < 6; y++) this.sim.setVoxel(x, y, z, 4);
+          if (x % 6 === 0 && z % 6 === 0) {
+            this.sim.setVoxel(x, 6, z, 8);
+            this.sim.setVoxel(x + 1, 6, z, 2);
+          }
+        }
+      }
+    } else if (preset === 'forge') {
+      for (let x = mid - 8; x <= mid + 8; x++) {
+        for (let z = mid - 8; z <= mid + 8; z++) {
+          this.sim.setVoxel(x, 4, z, 3);
+          if (Math.abs(x - mid) <= 5 && Math.abs(z - mid) <= 5) {
+            for (let y = 5; y <= 10; y++) this.sim.setVoxel(x, y, z, 19);
+          }
+        }
+      }
+    } else if (preset === 'cavern') {
+      for (let x = 6; x < N - 6; x++) {
+        for (let z = 6; z < N - 6; z++) {
+          for (let y = 0; y < 6; y++) this.sim.setVoxel(x, y, z, 4);
+          if (x % 7 === 0 && z % 7 === 0) this.sim.setVoxel(x, 6, z, 14);
+        }
+      }
+    }
+  }
+
+  triggerApocalypse(kind) {
+    this.sim.saveSnapshot();
+    this.saveMgr.data.stats.apocCount++;
+    const N = this.sim.size;
+
+    if (kind === 'blackhole') {
+      this.audio.playExplosion();
+      this.shakeTime = 0.6; this.shakeIntensity = 0.04 * this.saveMgr.data.shake;
+      for (let i = 0; i < this.sim.total; i++) {
+        if (this.sim.type[i] !== 0 && Math.random() < 0.85) this.sim.type[i] = 0;
+      }
+      this.showToast('🕳️ 3D Singularity Wipe');
+    } else if (kind === 'nova') {
+      this.audio.playExplosion();
+      this.shakeTime = 0.7; this.shakeIntensity = 0.05 * this.saveMgr.data.shake;
+      for (let y = 2; y < N - 2; y += 2) {
+        for (let z = 2; z < N - 2; z += 2) {
+          for (let x = 2; x < N - 2; x += 2) {
+            if (Math.random() < 0.25) this.sim.setVoxel(x, y, z, 5);
+          }
+        }
+      }
+      this.showToast('☀️ 3D Supernova Ignition');
+    } else if (kind === 'rain') {
+      this.audio.playDiscovery();
+      for (let y = N - 8; y < N - 2; y++) {
+        for (let z = 6; z < N - 6; z += 2) {
+          for (let x = 6; x < N - 6; x += 2) {
+            if (Math.random() < 0.5 && this.sim.type[this.sim.idx(x, y, z)] === 0) {
+              this.sim.setVoxel(x, y, z, 2);
+            }
+          }
+        }
+      }
+      this.showToast('🌧️ 3D Genesis Deluge');
+    }
+    this.checkAchievements();
+  }
+
+  startTrial(trial) {
+    this.mode = 'trial';
+    this.activeTrial = trial;
+    this.trialTimeLeft = trial.timeLimit;
+    this.loadPresetTerrain(trial.preset);
+    this.updateTrialBanner();
+    this.closeModal();
+  }
+
+  startDailySeed() {
+    this.mode = 'daily';
+    this.activeTrial = { id: 'daily', key: 'daily', targetEl: 14, targetCount: 420, timeLimit: 75, preset: 'oasis' };
+    this.trialTimeLeft = 75;
+    this.loadPresetTerrain('oasis');
+    this.updateTrialBanner();
+    this.closeModal();
+  }
+
+  updateTrialBanner() {
+    const banner = document.getElementById('trial-banner');
+    const modeBtn = document.getElementById('btn-mode');
+    if (this.mode === 'sandbox' || !this.activeTrial) {
+      banner.classList.remove('visible');
+      modeBtn.textContent = this.t('mode_sandbox');
+      return;
+    }
+    banner.classList.add('visible');
+    modeBtn.textContent = this.mode === 'daily' ? this.t('mode_daily') : this.t('mode_trial');
+    document.getElementById('trial-title').textContent =
+      this.mode === 'daily' ? this.t('mode_daily') : this.t(this.activeTrial.key + '_name');
+    document.getElementById('trial-desc').textContent =
+      this.mode === 'daily' ? this.t('t1_desc') : this.t(this.activeTrial.key + '_desc');
+  }
+
+  openModal(title, htmlContent) {
+    document.getElementById('modal-title').textContent = title;
+    document.getElementById('modal-body').innerHTML = htmlContent;
+    document.getElementById('modal-backdrop').classList.add('open');
+  }
+
+  closeModal() { document.getElementById('modal-backdrop').classList.remove('open'); }
+
+  openCodexModal() {
+    let html = `<div class="grid-2">`;
+    ELEMENTS.forEach(el => {
+      const unlocked = this.saveMgr.data.discovered.includes(el.id);
+      html += `<div class="card-item ${unlocked ? 'unlocked' : ''}">
+        <div style="display:flex; align-items:center; gap:8px;">
+          <span class="el-swatch" style="background:${unlocked ? el.hex : '#334155'}"></span>
+          <strong>${unlocked ? this.t('el_' + el.key) : '???'}</strong>
+          <span style="margin-left:auto; font-size:0.72rem; color:var(--text-muted);">${el.type.toUpperCase()}</span>
+        </div>
+        <div style="font-size:0.78rem; color:var(--text-muted);">
+          ${unlocked ? `Temp: ${el.temp}°C | Density: ${el.density}` : `🔒 Hint: ${el.recipeHint || 'Base Element'}`}
+        </div>
+      </div>`;
+    });
+    html += `</div>`;
+    this.openModal(this.t('codex_title'), html);
+  }
+
+  openModesModal() {
+    let html = `
+      <div style="display:flex; gap:10px; flex-wrap:wrap;">
+        <button class="icon-btn active" onclick="game.mode='sandbox'; game.activeTrial=null; game.updateTrialBanner(); game.closeModal();">🌌 ${this.t('mode_sandbox')}</button>
+        <button class="icon-btn" onclick="game.startDailySeed();">📅 ${this.t('mode_daily')}</button>
+      </div>
+      <div class="grid-2">`;
+    TRIAL_LEVELS.forEach(tr => {
+      const cleared = this.saveMgr.data.clearedTrials.includes(tr.id);
+      html += `<div class="card-item ${cleared ? 'unlocked' : ''}">
+        <strong>${cleared ? '✅ ' : ''}${this.t(tr.key + '_name')}</strong>
+        <p style="font-size:0.78rem; color:var(--text-muted);">${this.t(tr.key + '_desc')} (${tr.timeLimit}s)</p>
+        <button class="icon-btn" style="margin-top:6px; justify-content:center;" onclick="game.startTrial(TRIAL_LEVELS[${tr.id - 1}])">▶ Start 3D Trial</button>
+      </div>`;
+    });
+    html += `</div>`;
+    this.openModal(this.t('modes_title'), html);
+  }
+
+  openAchievementsModal() {
+    let html = `<div style="display:flex; gap:16px; flex-wrap:wrap; font-size:0.82rem; color:var(--accent-gold);">
+      <span>✧ Aether: ${this.saveMgr.data.aether}</span>
+      <span>🎨 Voxels: ${this.saveMgr.data.stats.totalCreated}</span>
+      <span>🧪 Reactions: ${this.saveMgr.data.stats.totalReactions}</span>
+      <span>⚡ Max Combo: ${this.saveMgr.data.stats.maxCombo}</span>
+    </div><div class="grid-2">`;
+    ACHIEVEMENTS_DEF.forEach(a => {
+      const done = this.saveMgr.data.achievements.includes(a.id);
+      html += `<div class="card-item ${done ? 'unlocked' : ''}" style="opacity:${done ? 1 : 0.55}">
+        <div><strong>${a.icon} ${this.t('ach_' + a.id)}</strong></div>
+      </div>`;
+    });
+    html += `</div>`;
+    this.openModal(this.t('ach_title'), html);
+  }
+
+  openSettingsModal() {
+    const d = this.saveMgr.data;
+    const html = `
+      <div class="setting-row">
+        <span>🌐 Language / 語言</span>
+        <select onchange="game.applyLanguage(this.value)">
+          <option value="zh-TW" ${d.lang === 'zh-TW' ? 'selected' : ''}>繁體中文</option>
+          <option value="zh-CN" ${d.lang === 'zh-CN' ? 'selected' : ''}>简体中文</option>
+          <option value="en" ${d.lang === 'en' ? 'selected' : ''}>English</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <span>🎨 Visual Theme / 視覺主題</span>
+        <select onchange="game.applyTheme(this.value)">
+          ${Object.keys(THEMES).map(k => `<option value="${k}" ${d.theme === k ? 'selected' : ''}>${THEMES[k].name[d.lang]}</option>`).join('')}
+        </select>
+      </div>
+      <div class="setting-row">
+        <span>🧊 3D Voxel Grid Size / 空間解析度</span>
+        <select onchange="const s=parseInt(this.value); game.saveMgr.data.gridSize=s; game.saveMgr.save(); game.sim.resize(s); game.sliceY=s; document.getElementById('slice-y-slider').max=s; document.getElementById('slice-y-slider').value=s; document.getElementById('slice-y-val').textContent=s; game.loadPresetTerrain('oasis');">
+          <option value="36" ${d.gridSize === 36 ? 'selected' : ''}>36 × 36 × 36 (Fast Mobile)</option>
+          <option value="48" ${d.gridSize === 48 ? 'selected' : ''}>48 × 48 × 48 (Balanced)</option>
+          <option value="64" ${d.gridSize === 64 ? 'selected' : ''}>64 × 64 × 64 (Ultra Cube)</option>
+        </select>
+      </div>
+      <div class="setting-row">
+        <span>🔊 SFX Volume / 互動音效</span>
+        <input type="range" min="0" max="1" step="0.05" value="${this.audio.sfxVol}" oninput="game.audio.sfxVol=parseFloat(this.value)" />
+      </div>
+      <div class="setting-row">
+        <span>🎵 Ambient Volume / 環境星海音</span>
+        <input type="range" min="0" max="1" step="0.05" value="${this.audio.bgmVol}" oninput="game.audio.bgmVol=parseFloat(this.value); game.audio.updateVolumes();" />
+      </div>
+      <div class="setting-row">
+        <span>👁️ Colorblind Symbols & FPS</span>
+        <div style="display:flex; gap:8px;">
+          <button class="icon-btn ${d.colorblind ? 'active' : ''}" onclick="game.saveMgr.data.colorblind=!game.saveMgr.data.colorblind; game.saveMgr.save(); game.renderElementStrip(); game.openSettingsModal();">CB Tags</button>
+          <button class="icon-btn ${d.showFps ? 'active' : ''}" onclick="game.saveMgr.data.showFps=!game.saveMgr.data.showFps; game.saveMgr.save(); document.getElementById('fps-chip').style.display=game.saveMgr.data.showFps?'flex':'none'; game.openSettingsModal();">FPS</button>
+        </div>
+      </div>
+      <div style="display:flex; flex-direction:column; gap:8px; margin-top:6px;">
+        <strong>💾 Save Data (Export / Import)</strong>
+        <textarea id="save-io-box" rows="2">${this.saveMgr.exportString()}</textarea>
+        <div style="display:flex; gap:8px; flex-wrap:wrap;">
+          <button class="icon-btn" onclick="navigator.clipboard?.writeText(document.getElementById('save-io-box').value); game.showToast('📋 Copied!');">Copy Save</button>
+          <button class="icon-btn" onclick="if(game.saveMgr.importString(document.getElementById('save-io-box').value)){game.showToast('✅ Imported!'); location.reload();}else{game.showToast('❌ Invalid Code');}">Import Save</button>
+          <button class="icon-btn danger" onclick="if(confirm('Reset all progress?')){game.saveMgr.resetAll(); location.reload();}">Reset Progress</button>
+        </div>
+      </div>
+    `;
+    this.openModal(this.t('settings_title'), html);
+  }
+
+  bindEvents() {
+    window.addEventListener('resize', () => this.handleResize());
+
+    this.canvas.addEventListener('pointerdown', e => {
+      this.audio.init();
+      this.pointer.down = true;
+      this.pointer.button = e.button;
+      this.pointer.lastX = e.clientX;
+      this.pointer.lastY = e.clientY;
+
+      if (e.button === 2 || this.selectedTool === 'orbit') {
+        this.canvas.style.cursor = 'grabbing';
+        return;
+      }
+
+      this.sim.saveSnapshot();
+      const hitInfo = this.renderer.raycastVoxel(e.clientX, e.clientY, this.sim, this.buildPlaneY);
+      if (hitInfo) {
+        const target = (this.selectedTool === 'brush') ? hitInfo.place : hitInfo.hit;
+        this.pointer.cursor3D = target;
+        this.apply3DToolAt(target, false);
+      }
+    });
+
+    window.addEventListener('pointermove', e => {
+      const dx = e.clientX - this.pointer.lastX;
+      const dy = e.clientY - this.pointer.lastY;
+      this.pointer.lastX = e.clientX;
+      this.pointer.lastY = e.clientY;
+
+      if (this.pointer.down && (this.pointer.button === 2 || this.selectedTool === 'orbit')) {
+        this.renderer.yaw -= dx * 0.008;
+        this.renderer.pitch = Math.max(-1.45, Math.min(1.45, this.renderer.pitch + dy * 0.008));
+        return;
+      }
+
+      const hitInfo = this.renderer.raycastVoxel(e.clientX, e.clientY, this.sim, this.buildPlaneY);
+      if (hitInfo) {
+        const target = (this.selectedTool === 'brush') ? hitInfo.place : hitInfo.hit;
+        this.pointer.cursor3D = target;
+
+        if (this.pointer.down && this.pointer.button === 0) {
+          this.apply3DToolAt(target, true);
+        }
+
+        const [gx, gy, gz] = hitInfo.hit;
+        const idx = this.sim.idx(gx, gy, gz);
+        const id = this.sim.type[idx];
+        const name = id === 0 ? this.t('vacuum') : this.t('el_' + EL_MAP[id].key);
+        const temp = Math.round(this.sim.temp[idx]);
+        document.getElementById('hover-inspector').textContent = `[X:${gx}, Y:${gy}, Z:${gz}] ${name} · ${temp}°C`;
+      } else {
+        this.pointer.cursor3D = null;
+      }
+    });
+
+    window.addEventListener('pointerup', () => {
+      this.pointer.down = false;
+      this.canvas.style.cursor = this.selectedTool === 'orbit' ? 'grab' : 'crosshair';
+    });
+
+    this.canvas.addEventListener('contextmenu', e => e.preventDefault());
+
+    window.addEventListener('wheel', e => {
+      if (document.getElementById('modal-backdrop').classList.contains('open')) return;
+      if (e.shiftKey) {
+        this.brushSize = Math.max(1, Math.min(10, this.brushSize + (e.deltaY < 0 ? 1 : -1)));
+        document.getElementById('brush-slider').value = this.brushSize;
+        document.getElementById('brush-val').textContent = this.brushSize;
+      } else {
+        this.renderer.distance = Math.max(24, Math.min(170, this.renderer.distance + e.deltaY * 0.05));
+      }
+    }, { passive: true });
+
+    window.addEventListener('keydown', e => {
+      if (e.target.tagName === 'TEXTAREA' || e.target.tagName === 'SELECT') return;
+      const k = e.key.toLowerCase();
+      if (k === 'p') this.togglePause();
+      else if (k === 'r') { this.audio.playClick(); this.sim.clear(); }
+      else if (k === 'e') this.setTool('erase');
+      else if (k === 'b') this.setTool('brush');
+      else if (k === 'v') this.setTool('orbit');
+      else if (k === 'i') this.setTool('eyedropper');
+      else if (k === '[') {
+        this.brushSize = Math.max(1, this.brushSize - 1);
+        document.getElementById('brush-slider').value = this.brushSize;
+        document.getElementById('brush-val').textContent = this.brushSize;
+      } else if (k === ']') {
+        this.brushSize = Math.min(10, this.brushSize + 1);
+        document.getElementById('brush-slider').value = this.brushSize;
+        document.getElementById('brush-val').textContent = this.brushSize;
+      } else if ((e.ctrlKey || e.metaKey) && k === 'z') {
+        e.preventDefault();
+        if (this.sim.undo()) this.audio.playClick();
+      } else if ((e.ctrlKey || e.metaKey) && k === 'y') {
+        e.preventDefault();
+        if (this.sim.redo()) this.audio.playClick();
+      }
+    });
+
+    document.querySelectorAll('#tools-dock .tool-btn[data-tool]').forEach(btn => {
+      btn.onclick = () => { this.audio.playClick(); this.setTool(btn.getAttribute('data-tool')); };
+    });
+    document.getElementById('btn-undo').onclick = () => { if (this.sim.undo()) this.audio.playClick(); };
+    document.getElementById('btn-redo').onclick = () => { if (this.sim.redo()) this.audio.playClick(); };
+    document.getElementById('btn-reset').onclick = () => {
+      this.audio.playClick();
+      if (this.mode === 'trial' && this.activeTrial) this.startTrial(this.activeTrial);
+      else this.sim.clear();
+    };
+
+    document.querySelectorAll('.speed-btn').forEach(btn => {
+      btn.onclick = () => {
+        this.audio.playClick();
+        this.simSpeed = parseFloat(btn.getAttribute('data-speed'));
+        document.querySelectorAll('.speed-btn').forEach(b => b.classList.toggle('active', b === btn));
+      };
+    });
+
+    document.getElementById('btn-cam-reset').onclick = () => {
+      this.audio.playClick();
+      this.renderer.yaw = 0.68;
+      this.renderer.pitch = 0.52;
+      this.renderer.distance = 82;
+    };
+    document.getElementById('btn-apoc-blackhole').onclick = () => this.triggerApocalypse('blackhole');
+    document.getElementById('btn-apoc-nova').onclick = () => this.triggerApocalypse('nova');
+    document.getElementById('btn-apoc-rain').onclick = () => this.triggerApocalypse('rain');
+
+    document.getElementById('plane-y-slider').oninput = e => {
+      this.buildPlaneY = parseInt(e.target.value, 10);
+      document.getElementById('plane-y-val').textContent = this.buildPlaneY;
+    };
+    document.getElementById('slice-y-slider').oninput = e => {
+      this.sliceY = parseInt(e.target.value, 10);
+      document.getElementById('slice-y-val').textContent = this.sliceY;
+    };
+    document.getElementById('btn-auto-rotate').onclick = e => {
+      this.audio.playClick();
+      this.renderer.autoRotate = !this.renderer.autoRotate;
+      e.target.classList.toggle('active', this.renderer.autoRotate);
+    };
+
+    document.querySelectorAll('.cat-tab').forEach(tab => {
+      tab.onclick = () => {
+        this.audio.playClick();
+        this.selectedCat = tab.getAttribute('data-cat');
+        document.querySelectorAll('.cat-tab').forEach(t => t.classList.toggle('active', t === tab));
+        this.renderElementStrip();
+      };
+    });
+
+    document.getElementById('shape-select').onchange = e => {
+      this.audio.playClick();
+      this.shapeMode = e.target.value;
+      this.setTool('brush');
+      if (this.shapeMode.startsWith('stamp_') && this.brushSize < 3) {
+        this.brushSize = 4;
+        document.getElementById('brush-slider').value = 4;
+        document.getElementById('brush-val').textContent = 4;
+      }
+    };
+
+    document.getElementById('brush-slider').oninput = e => {
+      this.brushSize = parseInt(e.target.value, 10);
+      document.getElementById('brush-val').textContent = this.brushSize;
+    };
+
+    document.getElementById('btn-gravity-dir').onclick = e => {
+      this.audio.playClick();
+      this.sim.gravityDir = this.sim.gravityDir === 1 ? -1 : (this.sim.gravityDir === -1 ? 0 : 1);
+      e.target.textContent = this.sim.gravityDir === 1 ? '⬇ G' : (this.sim.gravityDir === -1 ? '⬆ G' : '◎ 0G');
+    };
+
+    document.getElementById('btn-codex').onclick = () => { this.audio.playClick(); this.openCodexModal(); };
+    document.getElementById('btn-trials').onclick = () => { this.audio.playClick(); this.openModesModal(); };
+    document.getElementById('btn-mode').onclick = () => { this.audio.playClick(); this.openModesModal(); };
+    document.getElementById('btn-achievements').onclick = () => { this.audio.playClick(); this.openAchievementsModal(); };
+    document.getElementById('btn-settings').onclick = () => { this.audio.playClick(); this.openSettingsModal(); };
+    document.getElementById('modal-close').onclick = () => { this.audio.playClick(); this.closeModal(); };
+    document.getElementById('modal-backdrop').onclick = e => { if (e.target.id === 'modal-backdrop') this.closeModal(); };
+
+    document.getElementById('btn-mute').onclick = e => {
+      this.audio.muted = !this.audio.muted;
+      this.audio.updateVolumes();
+      e.target.textContent = this.audio.muted ? '🔇' : '🔊';
+    };
+
+    document.getElementById('btn-pause').onclick = () => this.togglePause();
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.hidden) {
+        if (this.audio.ctx && this.audio.ctx.state === 'running') this.audio.ctx.suspend();
+        if (this.saveMgr.data.autoPause && this.state === 'PLAYING') {
+          this.state = 'PAUSED';
+          document.getElementById('btn-pause').textContent = '▶️';
+        }
+      } else {
+        if (this.audio.ctx && !this.audio.muted) this.audio.ctx.resume();
+      }
+    });
+  }
+
+  togglePause() {
+    this.audio.playClick();
+    this.state = this.state === 'PLAYING' ? 'PAUSED' : 'PLAYING';
+    document.getElementById('btn-pause').textContent = this.state === 'PAUSED' ? '▶️' : '⏸';
+  }
+
+  handleReactionEvent(gx, gy, gz, resultElId, sourceElId, isExplosion = false) {
+    this.saveMgr.data.stats.totalReactions++;
+    this.combo++;
+    this.comboTimer = 1.6;
+    if (this.combo > this.saveMgr.data.stats.maxCombo) this.saveMgr.data.stats.maxCombo = this.combo;
+
+    this.saveMgr.data.aether += this.overdrive ? 2 : 1;
+    if (resultElId > 0) this.unlockElement(resultElId);
+
+    if (isExplosion) {
+      this.sim.explode3D(gx, gy, gz, 5);
+      this.audio.playExplosion();
+      this.shakeTime = 0.35;
+      this.shakeIntensity = 0.03 * this.saveMgr.data.shake;
+    } else if (Math.random() < 0.22) {
+      this.audio.playReaction(this.combo);
+    }
+
+    if (this.combo === 15 && !this.overdrive) {
+      this.overdrive = true;
+      this.showToast('🔥 GENESIS OVERDRIVE x2!');
+    }
+  }
+
+  update(dt) {
+    this.frameCount++;
+    this.fpsTimer += dt;
+    if (this.fpsTimer >= 0.5) {
+      this.fps = Math.round(this.frameCount / this.fpsTimer);
+      document.getElementById('hud-fps').textContent = this.fps;
+      this.frameCount = 0;
+      this.fpsTimer = 0;
+    }
+
+    if (this.renderer.autoRotate) {
+      this.renderer.yaw += dt * 0.35;
+    }
+
+    if (this.shakeTime > 0) {
+      this.shakeTime -= dt;
+      if (this.shakeTime <= 0) this.shakeIntensity = 0;
+    }
+
+    if (this.state === 'PAUSED') return;
+
+    if (this.comboTimer > 0) {
+      this.comboTimer -= dt;
+      if (this.comboTimer <= 0) {
+        this.combo = 0;
+        this.overdrive = false;
+      }
+    }
+
+    this.speedAccumulator += this.simSpeed;
+    let simStats = null;
+    while (this.speedAccumulator >= 1) {
+      this.speedAccumulator -= 1;
+      simStats = this.sim.step((x, y, z, res, src, exp) => this.handleReactionEvent(x, y, z, res, src, exp));
+    }
+
+    if (simStats) {
+      document.getElementById('hud-voxels').textContent = simStats.activeCount;
+      document.getElementById('hud-temp').textContent = simStats.avgTemp + '°C';
+      this.critical = simStats.avgTemp > 220 || (simStats.counts[21] + simStats.counts[23]) > 45;
+
+      if ((this.mode === 'trial' || this.mode === 'daily') && this.activeTrial) {
+        this.trialTimeLeft -= dt;
+        const current = simStats.counts[this.activeTrial.targetEl] || 0;
+        const pct = Math.min(100, (current / this.activeTrial.targetCount) * 100);
+        document.getElementById('trial-fill').style.width = pct + '%';
+        document.getElementById('trial-timer').textContent = Math.max(0, Math.ceil(this.trialTimeLeft)) + 's';
+
+        if (current >= this.activeTrial.targetCount) {
+          this.showToast(this.t('trial_win'));
+          this.audio.playDiscovery();
+          this.saveMgr.data.aether += 250;
+          if (typeof this.activeTrial.id === 'number' && !this.saveMgr.data.clearedTrials.includes(this.activeTrial.id)) {
+            this.saveMgr.data.clearedTrials.push(this.activeTrial.id);
+          }
+          this.saveMgr.data.stats.trialsCleared++;
+          this.saveMgr.save();
+          this.checkAchievements();
+          this.mode = 'sandbox';
+          this.activeTrial = null;
+          this.updateTrialBanner();
+        } else if (this.trialTimeLeft <= 0) {
+          this.showToast(this.t('trial_fail'));
+          this.mode = 'sandbox';
+          this.activeTrial = null;
+          this.updateTrialBanner();
+        }
+      }
+    }
+
+    this.displayAether += (this.saveMgr.data.aether - this.displayAether) * 0.15;
+    document.getElementById('hud-aether').textContent = Math.round(this.displayAether);
+
+    const vig = document.getElementById('screen-vignette');
+    vig.classList.toggle('overdrive', this.overdrive);
+    vig.classList.toggle('critical', !this.overdrive && this.critical);
+  }
+
+  loop(now) {
+    const dt = Math.min(0.05, (now - this.lastTime) / 1000);
+    this.lastTime = now;
+    this.update(dt);
+
+    const shakeOffset = this.shakeIntensity > 0
+      ? [(Math.random() - 0.5) * this.shakeIntensity, (Math.random() - 0.5) * this.shakeIntensity]
+      : [0, 0];
+
+    this.renderer.render(
+      this.sim,
+      this.sliceY,
+      this.pointer.cursor3D,
+      this.brushSize,
+      this.shapeMode,
+      THEMES[this.saveMgr.data.theme] || THEMES.neon,
+      shakeOffset
+    );
+    requestAnimationFrame(t => this.loop(t));
+  }
+}
+
+const game = new Aetheria3DGame();
+</script>
+</body>
+</html>
